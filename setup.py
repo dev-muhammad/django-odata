@@ -27,8 +27,13 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Framework :: Django",
         "Framework :: Django :: 4.2",
+        "Framework :: Django :: 5.0",
+        "Framework :: Django :: 5.1",
+        "Framework :: Django :: 5.2",
     ],
     python_requires=">=3.8",
     install_requires=[
@@ -45,6 +50,8 @@ setup(
             "black>=21.0",
             "flake8>=3.8",
             "isort>=5.0",
+            "pip-audit>=2.6.0",
+            "bandit[toml]>=1.7.0",
         ],
     },
 )
