@@ -474,7 +474,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Changelog
 
-### v0.1.0 (2024-01-15)
+### v0.1.0 (2025-08-30)
 - Initial release
 - Full OData query support ($filter, $orderby, $top, $skip, $select, $expand, $count)
 - Dynamic field selection and expansion
