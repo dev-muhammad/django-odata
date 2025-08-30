@@ -2,9 +2,6 @@
 OData-compatible ViewSets that extend Django REST Framework functionality.
 """
 
-from typing import Any, Dict, Optional
-
-from django.db.models import QuerySet
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -291,7 +288,10 @@ class ODataModelViewSet(ODataMixin, viewsets.ModelViewSet):
                     # Fallback to basic serialization
                     return Response(
                         {
-                            "@odata.context": f"{request.build_absolute_uri('/odata/')}$metadata#{navigation_property}/$entity",
+                            "@odata.context": (
+                                f"{request.build_absolute_uri('/odata/')}"
+                                f"$metadata#{navigation_property}/$entity"
+                            ),
                             **{
                                 field.name: getattr(related_obj, field.name)
                                 for field in related_obj._meta.fields

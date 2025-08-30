@@ -3,7 +3,7 @@ Mixin classes for adding OData functionality to Django REST Framework components
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from django.db.models import QuerySet
 from django.http import Http404
@@ -78,34 +78,36 @@ class ODataSerializerMixin:
         Process OData-specific query parameters before initialization.
         This ensures drf-flex-fields sees the mapped parameters.
         """
-        # Extract context from args or kwargs
-        context = kwargs.get("context")
-        if context is None and len(args) > 0:
-            # Check if first arg has context
-            if hasattr(args[0], "context"):
-                context = args[0].context
-
+        context = self._extract_context(*args, **kwargs)
         if not context:
             return
 
         odata_params = context.get("odata_params", {})
         request = context.get("request")
 
-        if not request:
+        if not request or not odata_params:
             return
 
-        # If no OData params, don't set any field restrictions (return all fields)
-        if not odata_params:
-            return
+        select_fields, expand_fields = self._process_select_and_expand(odata_params)
+        self._update_request_params(request, select_fields, expand_fields)
 
-        # Process $select and $expand parameters
+    def _extract_context(self, *args, **kwargs):
+        """Extract context from args or kwargs."""
+        context = kwargs.get("context")
+        if context is None and len(args) > 0:
+            # Check if first arg has context
+            if hasattr(args[0], "context"):
+                context = args[0].context
+        return context
+
+    def _process_select_and_expand(self, odata_params):
+        """Process $select and $expand parameters."""
         select_fields = []
         expand_fields = []
 
         # Handle $select parameter
         if "$select" in odata_params:
             select_value = odata_params["$select"]
-            # Handle both string and list values (from QueryDict)
             if isinstance(select_value, list):
                 select_value = select_value[0] if select_value else ""
             select_fields = [f.strip() for f in select_value.split(",") if f.strip()]
@@ -114,7 +116,6 @@ class ODataSerializerMixin:
         nested_field_selections = []
         if "$expand" in odata_params:
             expand_value = odata_params["$expand"]
-            # Handle both string and list values (from QueryDict)
             if isinstance(expand_value, list):
                 expand_value = expand_value[0] if expand_value else ""
             expand_fields, nested_field_selections = self._parse_expand_expression(
@@ -122,15 +123,17 @@ class ODataSerializerMixin:
             )
 
         # Auto-add expanded properties to select fields
-        if expand_fields:
-            for expand_field in expand_fields:
-                if expand_field not in select_fields:
-                    select_fields.append(expand_field)
+        for expand_field in expand_fields:
+            if expand_field not in select_fields:
+                select_fields.append(expand_field)
 
         # Add nested field selections to the main select fields
-        if nested_field_selections:
-            select_fields.extend(nested_field_selections)
+        select_fields.extend(nested_field_selections)
 
+        return select_fields, expand_fields
+
+    def _update_request_params(self, request, select_fields, expand_fields):
+        """Update request query parameters with processed fields."""
         # Import QueryDict here to avoid circular imports
         from django.http import QueryDict
 
@@ -221,7 +224,7 @@ class ODataSerializerMixin:
         if start_paren == -1 or end_paren == -1:
             return field, []  # Malformed, return as simple field
 
-        inner_content = field[start_paren + 1 : end_paren]
+        inner_content = field[start_paren + 1:end_paren]
 
         # Parse the $select parameter
         if inner_content.startswith("$select="):
@@ -289,62 +292,60 @@ class ODataMixin:
 
         This method detects $expand parameters and applies appropriate eager loading to prevent N+1 queries.
         """
+        expand_fields = self._get_expand_fields()
+        if not expand_fields:
+            return queryset
+
+        select_related_fields, prefetch_related_fields = self._categorize_expand_fields(
+            queryset.model, expand_fields
+        )
+        return self._apply_query_optimizations(
+            queryset, select_related_fields, prefetch_related_fields
+        )
+
+    def _get_expand_fields(self):
+        """Extract expand fields from OData parameters."""
         odata_params = self.get_odata_query_params()
 
         if "$expand" not in odata_params:
-            return queryset
+            return []
 
         expand_value = odata_params["$expand"]
         if isinstance(expand_value, list):
             expand_value = expand_value[0] if expand_value else ""
 
         if not expand_value:
-            return queryset
+            return []
 
-        # Parse the expand fields to get the relationship names
         expand_fields, _ = self._parse_expand_expression(expand_value)
+        return expand_fields
 
-        if not expand_fields:
-            return queryset
-
-        # Get the model from the queryset
-        model = queryset.model
-
-        # Separate fields that should use select_related vs prefetch_related
+    def _categorize_expand_fields(self, model, expand_fields):
+        """Categorize fields into select_related vs prefetch_related."""
         select_related_fields = []
         prefetch_related_fields = []
 
         for field_name in expand_fields:
-            try:
-                # Get the field from the model
-                field = model._meta.get_field(field_name)
+            if self._is_forward_relation(model, field_name):
+                select_related_fields.append(field_name)
+            else:
+                prefetch_related_fields.append(field_name)
 
-                # Check the field type to determine optimization strategy
-                if hasattr(field, "related_model"):
-                    # For ForeignKey and OneToOneField, use select_related
-                    if field.many_to_one or field.one_to_one:
-                        select_related_fields.append(field_name)
-                    # For ManyToMany and reverse ForeignKey, use prefetch_related
-                    elif field.many_to_many or field.one_to_many:
-                        prefetch_related_fields.append(field_name)
-            except Exception:
-                # If field is not found or is a reverse relation, try prefetch_related
-                # This handles reverse ForeignKey relations like 'posts' on Author
-                try:
-                    # Check if it's a reverse relation
-                    reverse_field = None
-                    for related_obj in model._meta.related_objects:
-                        if related_obj.get_accessor_name() == field_name:
-                            reverse_field = related_obj
-                            break
+        return select_related_fields, prefetch_related_fields
 
-                    if reverse_field:
-                        prefetch_related_fields.append(field_name)
-                except Exception:
-                    # If we can't determine the field type, default to prefetch_related
-                    prefetch_related_fields.append(field_name)
+    def _is_forward_relation(self, model, field_name):
+        """Check if field is a forward relation (ForeignKey/OneToOne)."""
+        try:
+            field = model._meta.get_field(field_name)
+            return (
+                hasattr(field, "related_model")
+                and (field.many_to_one or field.one_to_one)
+            )
+        except Exception:
+            return False
 
-        # Apply optimizations
+    def _apply_query_optimizations(self, queryset, select_related_fields, prefetch_related_fields):
+        """Apply select_related and prefetch_related optimizations."""
         if select_related_fields:
             queryset = queryset.select_related(*select_related_fields)
 

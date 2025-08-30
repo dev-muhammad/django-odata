@@ -3,7 +3,7 @@ Utility functions for OData query parsing and Django ORM integration.
 """
 
 import logging
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Union
 
 from django.db.models import QuerySet
 from django.http import QueryDict
@@ -68,41 +68,10 @@ def apply_odata_query_params(
         ODataQueryError: If the OData query is invalid
     """
     try:
-        # Apply $filter
-        if "$filter" in query_params:
-            queryset = apply_odata_query(queryset, query_params["$filter"])
-
-        # Apply $orderby
-        if "$orderby" in query_params:
-            order_fields = []
-            for field in query_params["$orderby"].split(","):
-                field = field.strip()
-                if field.endswith(" desc"):
-                    order_fields.append("-" + field[:-5].strip())
-                elif field.endswith(" asc"):
-                    order_fields.append(field[:-4].strip())
-                else:
-                    order_fields.append(field)
-            queryset = queryset.order_by(*order_fields)
-
-        # Apply $skip (offset)
-        if "$skip" in query_params:
-            try:
-                skip = int(query_params["$skip"])
-                if skip > 0:
-                    queryset = queryset[skip:]
-            except (ValueError, TypeError):
-                logger.warning(f"Invalid $skip value: {query_params['$skip']}")
-
-        # Apply $top (limit)
-        if "$top" in query_params:
-            try:
-                top = int(query_params["$top"])
-                if top > 0:
-                    queryset = queryset[:top]
-            except (ValueError, TypeError):
-                logger.warning(f"Invalid $top value: {query_params['$top']}")
-
+        queryset = _apply_filter(queryset, query_params)
+        queryset = _apply_orderby(queryset, query_params)
+        queryset = _apply_skip(queryset, query_params)
+        queryset = _apply_top(queryset, query_params)
         return queryset
 
     except ODataException as e:
@@ -111,6 +80,58 @@ def apply_odata_query_params(
     except Exception as e:
         logger.error(f"Unexpected error applying OData query: {e}")
         raise
+
+
+def _apply_filter(queryset: QuerySet, query_params: Dict[str, Any]) -> QuerySet:
+    """Apply $filter parameter to queryset."""
+    if "$filter" in query_params:
+        queryset = apply_odata_query(queryset, query_params["$filter"])
+    return queryset
+
+
+def _apply_orderby(queryset: QuerySet, query_params: Dict[str, Any]) -> QuerySet:
+    """Apply $orderby parameter to queryset."""
+    if "$orderby" not in query_params:
+        return queryset
+
+    order_fields = []
+    for field in query_params["$orderby"].split(","):
+        field = field.strip()
+        if field.endswith(" desc"):
+            order_fields.append("-" + field[:-5].strip())
+        elif field.endswith(" asc"):
+            order_fields.append(field[:-4].strip())
+        else:
+            order_fields.append(field)
+    return queryset.order_by(*order_fields)
+
+
+def _apply_skip(queryset: QuerySet, query_params: Dict[str, Any]) -> QuerySet:
+    """Apply $skip parameter to queryset."""
+    if "$skip" not in query_params:
+        return queryset
+
+    try:
+        skip = int(query_params["$skip"])
+        if skip > 0:
+            queryset = queryset[skip:]
+    except (ValueError, TypeError):
+        logger.warning(f"Invalid $skip value: {query_params['$skip']}")
+    return queryset
+
+
+def _apply_top(queryset: QuerySet, query_params: Dict[str, Any]) -> QuerySet:
+    """Apply $top parameter to queryset."""
+    if "$top" not in query_params:
+        return queryset
+
+    try:
+        top = int(query_params["$top"])
+        if top > 0:
+            queryset = queryset[:top]
+    except (ValueError, TypeError):
+        logger.warning(f"Invalid $top value: {query_params['$top']}")
+    return queryset
 
 
 def get_expandable_fields_from_serializer(serializer_class) -> Dict[str, Any]:
