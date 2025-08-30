@@ -18,7 +18,7 @@ from .utils import apply_odata_query_params, parse_odata_query
 
 __all__ = [
     "ODataModelSerializer",
-    "ODataSerializer", 
+    "ODataSerializer",
     "ODataModelViewSet",
     "ODataViewSet",
     "ODataMixin",
