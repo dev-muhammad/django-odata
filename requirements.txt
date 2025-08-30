@@ -1,0 +1,4 @@
+Django>=4.2
+djangorestframework>=3.12.0
+drf-flex-fields>=1.0.0
+odata-query>=0.9.0
