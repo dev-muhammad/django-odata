@@ -68,7 +68,7 @@ jobs:
 
       - name: Import sort check with isort
         run: |
-          isort --check-only django_odata tests
+          isort --profile black --check-only django_odata tests
 
       - name: Run tests
         run: |

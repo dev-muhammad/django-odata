@@ -3,6 +3,7 @@ OData-compatible serializers that extend drf-flex-fields functionality.
 """
 
 from typing import Any, Dict
+
 from rest_flex_fields import FlexFieldsModelSerializer
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers

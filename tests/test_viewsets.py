@@ -10,9 +10,11 @@ from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
 from django_odata.serializers import ODataModelSerializer
-from django_odata.viewsets import (ODataModelViewSet,
-                                   ODataReadOnlyModelViewSet,
-                                   create_odata_viewset)
+from django_odata.viewsets import (
+    ODataModelViewSet,
+    ODataReadOnlyModelViewSet,
+    create_odata_viewset,
+)
 
 
 class ViewSetTestModel(models.Model):

@@ -11,8 +11,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .utils import (apply_odata_query_params, build_odata_metadata,
-                    parse_odata_query)
+from .utils import apply_odata_query_params, build_odata_metadata, parse_odata_query
 
 logger = logging.getLogger(__name__)
 
@@ -224,7 +223,7 @@ class ODataSerializerMixin:
         if start_paren == -1 or end_paren == -1:
             return field, []  # Malformed, return as simple field
 
-        inner_content = field[start_paren + 1:end_paren]
+        inner_content = field[start_paren + 1 : end_paren]
 
         # Parse the $select parameter
         if inner_content.startswith("$select="):
@@ -337,14 +336,15 @@ class ODataMixin:
         """Check if field is a forward relation (ForeignKey/OneToOne)."""
         try:
             field = model._meta.get_field(field_name)
-            return (
-                hasattr(field, "related_model")
-                and (field.many_to_one or field.one_to_one)
+            return hasattr(field, "related_model") and (
+                field.many_to_one or field.one_to_one
             )
         except Exception:
             return False
 
-    def _apply_query_optimizations(self, queryset, select_related_fields, prefetch_related_fields):
+    def _apply_query_optimizations(
+        self, queryset, select_related_fields, prefetch_related_fields
+    ):
         """Apply select_related and prefetch_related optimizations."""
         if select_related_fields:
             queryset = queryset.select_related(*select_related_fields)
