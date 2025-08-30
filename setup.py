@@ -50,6 +50,8 @@ setup(
             "black>=21.0",
             "flake8>=3.8",
             "isort>=5.0",
+            "pip-audit>=2.6.0",
+            "bandit[toml]>=1.7.0",
         ],
     },
 )
