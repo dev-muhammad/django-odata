@@ -3,12 +3,13 @@ Tests for django_odata.mixins module.
 """
 
 import pytest
-from django.test import TestCase, RequestFactory
 from django.db import models
 from django.http import Http404
-from rest_framework.test import APITestCase
+from django.test import RequestFactory, TestCase
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.test import APITestCase
+
 from django_odata.mixins import ODataMixin, ODataSerializerMixin
 from django_odata.serializers import ODataModelSerializer
 

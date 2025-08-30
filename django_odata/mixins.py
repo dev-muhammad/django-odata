@@ -2,14 +2,17 @@
 Mixin classes for adding OData functionality to Django REST Framework components.
 """
 
-from typing import Dict, Any, Optional
+import logging
+from typing import Any, Dict, Optional
+
 from django.db.models import QuerySet
 from django.http import Http404
-from rest_framework.response import Response
-from rest_framework.decorators import action
 from rest_framework import status
-from .utils import parse_odata_query, apply_odata_query_params, build_odata_metadata
-import logging
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
+from .utils import (apply_odata_query_params, build_odata_metadata,
+                    parse_odata_query)
 
 logger = logging.getLogger(__name__)
 

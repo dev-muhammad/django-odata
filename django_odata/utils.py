@@ -2,12 +2,13 @@
 Utility functions for OData query parsing and Django ORM integration.
 """
 
-from typing import Dict, Any, Optional, Union
+import logging
+from typing import Any, Dict, Optional, Union
+
 from django.db.models import QuerySet
 from django.http import QueryDict
 from odata_query.django import apply_odata_query
 from odata_query.exceptions import ODataException
-import logging
 
 logger = logging.getLogger(__name__)
 

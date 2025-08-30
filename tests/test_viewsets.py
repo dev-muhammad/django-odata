@@ -3,17 +3,16 @@ Tests for django_odata.viewsets module.
 """
 
 import pytest
-from django.test import TestCase, RequestFactory
-from django.db import models
 from django.contrib.auth.models import User
-from rest_framework.test import APITestCase, APIClient
+from django.db import models
+from django.test import RequestFactory, TestCase
 from rest_framework import status
-from django_odata.viewsets import (
-    ODataModelViewSet,
-    ODataReadOnlyModelViewSet,
-    create_odata_viewset,
-)
+from rest_framework.test import APIClient, APITestCase
+
 from django_odata.serializers import ODataModelSerializer
+from django_odata.viewsets import (ODataModelViewSet,
+                                   ODataReadOnlyModelViewSet,
+                                   create_odata_viewset)
 
 
 class ViewSetTestModel(models.Model):

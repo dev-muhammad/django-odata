@@ -3,15 +3,12 @@ Tests for django_odata.utils module.
 """
 
 import pytest
-from django.test import TestCase, RequestFactory
 from django.db import models
 from django.http import QueryDict
-from django_odata.utils import (
-    parse_odata_query,
-    apply_odata_query_params,
-    build_odata_metadata,
-    ODataQueryBuilder,
-)
+from django.test import RequestFactory, TestCase
+
+from django_odata.utils import (ODataQueryBuilder, apply_odata_query_params,
+                                build_odata_metadata, parse_odata_query)
 
 
 class UtilsTestModel(models.Model):

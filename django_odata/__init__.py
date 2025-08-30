@@ -11,10 +11,10 @@ This package combines drf-flex-fields and odata-query to provide:
 __version__ = "0.1.0"
 __author__ = "Your Name"
 
-from .serializers import ODataModelSerializer, ODataSerializer
-from .viewsets import ODataModelViewSet, ODataViewSet
 from .mixins import ODataMixin, ODataSerializerMixin
+from .serializers import ODataModelSerializer, ODataSerializer
 from .utils import apply_odata_query_params, parse_odata_query
+from .viewsets import ODataModelViewSet, ODataViewSet
 
 __all__ = [
     "ODataModelSerializer",

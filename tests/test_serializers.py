@@ -3,15 +3,13 @@ Tests for django_odata.serializers module.
 """
 
 import pytest
-from django.test import TestCase
 from django.db import models
 from django.http import QueryDict
+from django.test import TestCase
 from rest_framework import serializers
-from django_odata.serializers import (
-    ODataModelSerializer,
-    ODataSerializer,
-    create_odata_serializer,
-)
+
+from django_odata.serializers import (ODataModelSerializer, ODataSerializer,
+                                      create_odata_serializer)
 
 
 class SerializerTestModel(models.Model):

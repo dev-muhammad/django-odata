@@ -2,11 +2,13 @@
 OData-compatible ViewSets that extend Django REST Framework functionality.
 """
 
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 from django.db.models import QuerySet
-from rest_framework import viewsets, status
-from rest_framework.response import Response
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.response import Response
+
 from .mixins import ODataMixin
 from .serializers import ODataModelSerializer
 
