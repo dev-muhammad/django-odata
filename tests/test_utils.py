@@ -5,7 +5,7 @@ Tests for django_odata.utils module.
 import pytest
 from django.db import models
 from django.http import QueryDict
-from django.test import RequestFactory, TestCase
+from django.test import TestCase
 
 from django_odata.utils import (
     ODataQueryBuilder,

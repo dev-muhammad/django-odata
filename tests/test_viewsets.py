@@ -3,7 +3,6 @@ Tests for django_odata.viewsets module.
 """
 
 import pytest
-from django.contrib.auth.models import User
 from django.db import models
 from django.test import RequestFactory, TestCase
 from rest_framework import status
