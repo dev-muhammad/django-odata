@@ -3,7 +3,6 @@ Tests for django_odata.utils module.
 """
 
 import pytest
-from django.db import models
 from django.http import QueryDict
 from django.test import TestCase
 
@@ -14,6 +13,9 @@ from django_odata.utils import (
     parse_odata_query,
 )
 
+# Test model for utility tests
+from django.db import models
+
 
 class UtilsTestModel(models.Model):
     """Test model for utility tests."""
@@ -23,7 +25,7 @@ class UtilsTestModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        app_label = "test"
+        app_label = "tests"
 
 
 class TestParseODataQuery(TestCase):

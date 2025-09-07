@@ -3,7 +3,6 @@ Tests for django_odata.serializers module.
 """
 
 import pytest
-from django.db import models
 from django.http import QueryDict
 from django.test import TestCase
 from rest_framework import serializers
@@ -13,6 +12,9 @@ from django_odata.serializers import (
     ODataSerializer,
     create_odata_serializer,
 )
+
+# Test models for serializer tests
+from django.db import models
 
 
 class SerializerTestModel(models.Model):
@@ -24,7 +26,7 @@ class SerializerTestModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        app_label = "test"
+        app_label = "tests"
 
 
 class SerializerRelatedModel(models.Model):
@@ -36,7 +38,7 @@ class SerializerRelatedModel(models.Model):
     description = models.TextField()
 
     class Meta:
-        app_label = "test"
+        app_label = "tests"
 
 
 class TestODataModelSerializer(TestCase):

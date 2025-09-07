@@ -18,8 +18,8 @@ class TestODataComprehensiveSuite(TestCase):
         # and that the test infrastructure is working correctly
 
         test_modules = [
-            "tests.test_odata_expressions",
-            "tests.test_odata_performance",
+            "tests.integration.test_odata_expressions",
+            "tests.integration.test_odata_performance",
         ]
 
         all_passed = True
