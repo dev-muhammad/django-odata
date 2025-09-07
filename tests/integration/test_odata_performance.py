@@ -38,7 +38,7 @@ class PerformanceTestModelSerializer(ODataModelSerializer):
         ]
         expandable_fields = {
             "related_items": (
-                "tests.test_odata_performance.PerformanceRelatedModelSerializer",
+                "PerformanceRelatedModelSerializer",
                 {"many": True},
             ),
         }

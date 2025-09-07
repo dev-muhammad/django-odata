@@ -37,7 +37,7 @@ class ODataTestModelSerializer(ODataModelSerializer):
         ]
         expandable_fields = {
             "related_items": (
-                "tests.test_odata_expressions.ODataRelatedModelSerializer",
+                "ODataRelatedModelSerializer",
                 {"many": True},
             ),
         }
