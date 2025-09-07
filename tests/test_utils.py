@@ -3,16 +3,13 @@ Tests for django_odata.utils module.
 """
 
 import pytest
+
+# Test model for utility tests
 from django.db import models
 from django.http import QueryDict
-from django.test import RequestFactory, TestCase
+from django.test import TestCase
 
-from django_odata.utils import (
-    ODataQueryBuilder,
-    apply_odata_query_params,
-    build_odata_metadata,
-    parse_odata_query,
-)
+from django_odata.utils import ODataQueryBuilder, parse_odata_query
 
 
 class UtilsTestModel(models.Model):
@@ -23,7 +20,7 @@ class UtilsTestModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        app_label = "test"
+        app_label = "tests"
 
 
 class TestParseODataQuery(TestCase):

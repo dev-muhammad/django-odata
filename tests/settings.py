@@ -1,13 +1,31 @@
 """
-Django settings for testing django-odata package.
+Django settings for unit tests.
+
+This is a minimal Django configuration for running unit tests
+that don't require complex database setup.
 """
 
 import os
 
-# Build paths
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Test database
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = "test-secret-key-for-unit-tests-only"
+DEBUG = True
+ALLOWED_HOSTS = ["*"]
+
+# Application definition - minimal setup for unit tests
+INSTALLED_APPS = [
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "rest_framework",
+    "rest_flex_fields",
+    "django_odata",
+    "tests",  # For unit test models
+]
+
+# Database - in-memory SQLite for unit tests
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
@@ -15,70 +33,27 @@ DATABASES = {
     }
 }
 
-# Minimal required settings
-SECRET_KEY = "test-secret-key-for-testing-only"
-DEBUG = True
-ALLOWED_HOSTS = ["*"]
-
-# Application definition
-INSTALLED_APPS = [
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "rest_framework",
-    "rest_flex_fields",
-    "django_odata",
-    "tests",
-]
-
 # REST Framework settings
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
     ],
-    "DEFAULT_RENDERER_CLASSES": [
-        "rest_framework.renderers.JSONRenderer",
-    ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 20,
 }
 
-# Use UTC timezone
+# Password validation
+AUTH_PASSWORD_VALIDATORS = []
+
+# Internationalization
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "UTC"
+USE_I18N = True
 USE_TZ = True
-
-# Minimal middleware
-MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "django.middleware.common.CommonMiddleware",
-]
-
-# Template settings (minimal)
-TEMPLATES = [
-    {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-            ],
-        },
-    },
-]
-
-# Disable logging during tests
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "null": {
-            "class": "logging.NullHandler",
-        },
-    },
-    "root": {
-        "handlers": ["null"],
-    },
-}
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Test settings
+USE_TZ = True  # Required for timezone-aware datetime fields

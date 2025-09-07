@@ -3,6 +3,8 @@ Tests for django_odata.mixins module.
 """
 
 import pytest
+
+# Test model for mixin tests
 from django.db import models
 from django.http import Http404
 from django.test import RequestFactory, TestCase
@@ -22,7 +24,7 @@ class MixinTestModel(models.Model):
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        app_label = "test"
+        app_label = "tests"
 
 
 class MixinTestModelSerializer(ODataModelSerializer):

@@ -3,10 +3,10 @@ Tests for django_odata.viewsets module.
 """
 
 import pytest
-from django.contrib.auth.models import User
+
+# Test model for viewset tests
 from django.db import models
 from django.test import RequestFactory, TestCase
-from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
 from django_odata.serializers import ODataModelSerializer
@@ -26,7 +26,7 @@ class ViewSetTestModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        app_label = "test"
+        app_label = "tests"
 
 
 class ViewSetTestModelSerializer(ODataModelSerializer):

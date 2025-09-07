@@ -452,7 +452,7 @@ python manage.py runserver
 Then visit:
 - http://localhost:8000/odata/posts/ - Blog posts endpoint
 - http://localhost:8000/odata/posts/$metadata - Metadata
-- http://localhost:8000/odata/posts/?$filter=status eq 'published'&$expand=author
+- [http://localhost:8000/odata/posts/?$filter=status eq 'published'&$expand=author](http://localhost:8000/odata/posts/?$filter=status eq 'published'&$expand=author) - All published posts expanded with author
 
 ## Contributing
 
