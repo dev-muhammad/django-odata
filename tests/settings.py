@@ -56,4 +56,4 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Test settings
-USE_TZ = False  # Simplify testing
+USE_TZ = True  # Required for timezone-aware datetime fields

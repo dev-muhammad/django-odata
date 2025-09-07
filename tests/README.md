@@ -79,6 +79,46 @@ pytest tests/test_utils.py
 - **URL Configuration**: `tests/integration/support/urls.py` for API endpoint tests
 - **Django App**: `tests.integration.support` (configured via apps.py)
 
+## Database Migrations in Tests
+
+### How Test Database Setup Works
+
+1. **pytest-django** automatically creates a test database for each test run
+2. **Migrations are applied automatically** during test database creation
+3. **Tables are created** from the migration files in `tests/integration/support/migrations/`
+4. **Database is destroyed** after tests complete
+
+### In CI Pipeline
+
+The CI workflow ensures proper database setup:
+
+```yaml
+- name: Check Django setup and run migrations
+  env:
+    DJANGO_SETTINGS_MODULE: tests.integration.support.settings
+  run: |
+    # Verify Django can detect our test apps and migrations
+    python -m django check --settings=tests.integration.support.settings
+    python -m django showmigrations --settings=tests.integration.support.settings
+
+- name: Run tests
+  env:
+    DJANGO_SETTINGS_MODULE: tests.integration.support.settings
+  run: |
+    pytest --cov=django_odata --cov-report=xml --cov-report=term-missing
+```
+
+### Migration Files
+
+Integration test migrations are stored in:
+- `tests/integration/support/migrations/0001_initial.py`
+
+These migrations create all necessary tables:
+- `integration_support_odatatestmodel`
+- `integration_support_performancetestmodel`
+- `integration_support_performancerelatedmodel`
+- And other test model tables
+
 ## Test Models
 
 The test suite includes several models for comprehensive testing:

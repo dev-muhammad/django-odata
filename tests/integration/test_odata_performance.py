@@ -16,7 +16,7 @@ from django.test.utils import override_settings
 from django_odata.serializers import ODataModelSerializer
 from django_odata.viewsets import ODataModelViewSet
 
-from .support.models import PerformanceTestModel, PerformanceRelatedModel
+from .support.models import PerformanceRelatedModel, PerformanceTestModel
 
 
 class PerformanceTestModelSerializer(ODataModelSerializer):

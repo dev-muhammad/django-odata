@@ -2,7 +2,6 @@
 Test models for django-odata test suite.
 """
 
-from datetime import datetime, timezone
 from decimal import Decimal
 
 from django.db import models
@@ -84,5 +83,3 @@ class PerformanceRelatedModel(models.Model):
 
     class Meta:
         app_label = "integration_support"
-
-

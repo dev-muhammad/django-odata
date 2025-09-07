@@ -9,8 +9,8 @@ from ..test_odata_expressions import ODataTestViewSet
 
 # Create router and register viewsets
 router = DefaultRouter()
-router.register(r'test-models', ODataTestViewSet, basename='test-models')
+router.register(r"test-models", ODataTestViewSet, basename="test-models")
 
 urlpatterns = [
-    path('api/', include(router.urls)),
+    path("api/", include(router.urls)),
 ]

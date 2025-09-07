@@ -10,13 +10,13 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase
 from rest_framework.test import APIClient, APITestCase
 
 from django_odata.serializers import ODataModelSerializer
 from django_odata.viewsets import ODataModelViewSet
 
-from .support.models import ODataTestModel, ODataRelatedModel
+from .support.models import ODataRelatedModel, ODataTestModel
 
 
 class ODataTestModelSerializer(ODataModelSerializer):
@@ -470,7 +470,7 @@ class TestODataErrorHandling(TestCase):
 
         # Test invalid field name - should raise FieldError during query building
         params = {"$filter": "nonexistent_field eq 'value'"}
-        
+
         with self.assertRaises(FieldError):
             apply_odata_query_params(self.queryset, params)
 
@@ -482,9 +482,9 @@ class TestODataErrorHandling(TestCase):
         # Note: SQLite and Django are tolerant of type conversions, so this may not raise an exception
         # Instead, test that the query executes but returns no results for invalid comparisons
         params = {"$filter": "count eq 'not_a_number'"}
-        
+
         result_queryset = apply_odata_query_params(self.queryset, params)
-        
+
         # The query should execute without error but return no results
         self.assertEqual(list(result_queryset), [])
 
