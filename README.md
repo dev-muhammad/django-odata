@@ -470,7 +470,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - Built on top of [Django REST Framework](https://www.django-rest-framework.org/)
 - Uses [drf-flex-fields](https://github.com/rsinger86/drf-flex-fields) for dynamic field selection
-- Uses [odata-query](https://github.com/gorilla-llm/odata-query) for OData query parsing
+- Uses [odata-query](https://github.com/gorilla-co/odata-query) for OData query parsing
 
 ## Changelog
 
