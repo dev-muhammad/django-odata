@@ -35,20 +35,6 @@ class BlogPostViewSet(ODataModelViewSet):
     queryset = BlogPost.objects.all()
     serializer_class = BlogPostSerializer
 
-    def get_queryset(self):
-        """
-        Get the queryset with any additional filtering.
-        The OData filtering is applied automatically by the parent class.
-        """
-        queryset = super().get_queryset()
-
-        # Add any custom business logic here
-        # For example, only show published posts to non-staff users
-        user = getattr(self.request, "user", None)
-        if user and not user.is_staff:
-            queryset = queryset.filter(status="published")
-
-        return queryset
 
 
 class AuthorViewSet(ODataModelViewSet):

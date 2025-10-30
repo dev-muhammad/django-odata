@@ -26,3 +26,33 @@ extend-exclude = '''
   | dist
 )/
 '''
+
+[tool.uv]
+package = false
+
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "black>=21.0",
+    "django>=4.2",
+    "djangorestframework>=3.12.0",
+    "flake8>=3.8",
+    "isort>=5.0",
+    "odata-query>=0.9.0",
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+    "pytest-django>=4.0",
+    "pytest-benchmark>=3.4.0",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+python_files = "tests.py test_*.py *_tests.py"
+addopts = "--verbose --tb=short --no-migrations"
+testpaths = ["tests", "example"]
+markers = [
+    "benchmark: run benchmark tests",
+]

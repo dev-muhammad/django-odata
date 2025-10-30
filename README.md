@@ -2,7 +2,7 @@
 
 **Bringing OData Standards to Django** - A comprehensive Django package that implements the OData (Open Data Protocol) specification for REST APIs, enabling standardized data access patterns with powerful querying capabilities.
 
-This package transforms your Django models into OData-compliant endpoints by seamlessly integrating `drf-flex-fields` and `odata-query`, providing enterprise-grade API functionality with minimal configuration.
+This package transforms your Django models into OData-compliant endpoints by seamlessly integrating `odata-query` for query parsing and providing a native implementation for dynamic field selection and expansion. This offers enterprise-grade API functionality with minimal configuration and zero external dependencies for its core features.
 
 ## Features
 
@@ -32,7 +32,7 @@ pip install django-odata
 Or install from source:
 
 ```bash
-git clone https://github.com/dev-muhammad/django-odata.git
+git clone https://github.com/alexandre-fundcraft/fc-django-odata.git
 cd django-odata
 pip install -e .
 ```
@@ -42,10 +42,8 @@ pip install -e .
 - Django >= 4.2 LTS
 - Python >= 3.8
 - djangorestframework >= 3.12.0
-- drf-flex-fields >= 1.0.0
 - odata-query >= 0.9.0
 
-**Note**: Django 4.2 LTS is supported until April 2026. Please verify that `drf-flex-fields` supports Django 4.2 in your environment, as compatibility may vary between versions.
 
 ## Quick Start
 
@@ -55,7 +53,6 @@ pip install -e .
 INSTALLED_APPS = [
     # ... your other apps
     'rest_framework',
-    'rest_flex_fields',
     'django_odata',
 ]
 ```
@@ -428,10 +425,7 @@ DJANGO_ODATA = {
 Run the test suite:
 
 ```bash
-# Install test dependencies
-pip install -e .[dev]
-
-# Run tests
+# Run all tests (unit, integration, and performance)
 pytest
 
 # Run tests with coverage
@@ -469,16 +463,13 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Credits
 
 - Built on top of [Django REST Framework](https://www.django-rest-framework.org/)
-- Uses [drf-flex-fields](https://github.com/rsinger86/drf-flex-fields) for dynamic field selection
 - Uses [odata-query](https://github.com/gorilla-co/odata-query) for OData query parsing
 
 ## Changelog
 
-### v0.1.0 (2025-08-30)
-- Initial release
-- Full OData query support ($filter, $orderby, $top, $skip, $select, $expand, $count)
-- Dynamic field selection and expansion
-- Metadata endpoints ($metadata, service document)
-- Comprehensive test suite
-- Example application
-- Support for Django 4.2 LTS and Python 3.8+
+### v2.0.0 (In Progress)
+- **Removed `drf-flex-fields` Dependency**: Replaced `drf-flex-fields` with a native implementation for field selection (`$select`) and expansion (`$expand`). This change removes external dependencies for core functionality, improves performance, and simplifies the architecture. The API remains 100% backward compatible.
+- **Enhanced Query Optimization**: The native expansion logic now automatically applies `select_related` and `prefetch_related` to prevent N+1 query issues, making your API faster out-of-the-box.
+
+### v0.1.0
+- Initial release providing full OData v4 query support, dynamic field selection and expansion via `drf-flex-fields`, and comprehensive test coverage.

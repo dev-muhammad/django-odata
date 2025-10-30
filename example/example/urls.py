@@ -5,7 +5,7 @@ Example project URL configuration.
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from blog.views import BlogPostViewSet, AuthorViewSet, CategoryViewSet
+from example.blog.views import BlogPostViewSet, AuthorViewSet, CategoryViewSet
 
 # Create router and register viewsets
 router = DefaultRouter()

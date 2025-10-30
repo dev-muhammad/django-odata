@@ -25,7 +25,6 @@ INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "rest_framework",
-    "rest_flex_fields",
     "django_odata",
     "tests.integration.support.apps.IntegrationSupportConfig",
 ]

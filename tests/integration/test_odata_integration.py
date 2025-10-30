@@ -6,9 +6,14 @@ existing test models and setup from the main test suite.
 """
 
 import pytest
-from django.http import QueryDict
+from django.http import QueryDict, HttpRequest
 from django.test import TestCase
 from rest_framework.viewsets import ModelViewSet
+from django.test.utils import override_settings
+from django.db import connection
+from django.contrib.auth.models import User
+from example.blog.models import Author, BlogPost, Category
+from django.test import RequestFactory
 
 from django_odata.mixins import ODataMixin
 from django_odata.utils import ODataQueryBuilder, parse_odata_query
@@ -207,8 +212,6 @@ class TestODataMixinIntegration(TestCase):
 
     def setUp(self):
         """Set up test viewset with OData mixin."""
-        from django.http import QueryDict
-
         class MockModel:
             objects = self
 
@@ -239,8 +242,6 @@ class TestODataMixinIntegration(TestCase):
 
     def test_odata_query_param_extraction(self):
         """Test OData query parameter extraction."""
-        from django.http import HttpRequest
-
         # Mock request with OData parameters
         request = HttpRequest()
         request.GET = QueryDict(
@@ -262,8 +263,6 @@ class TestODataMixinIntegration(TestCase):
 
     def test_odata_mixin_error_handling(self):
         """Test that OData mixin handles errors gracefully."""
-        from django.http import HttpRequest
-
         # Mock request with potentially problematic parameters
         request = HttpRequest()
         request.GET = QueryDict("$filter=invalid syntax here")
@@ -381,6 +380,74 @@ class TestODataValidationAndErrorCases(TestCase):
                 # Should successfully parse all parameters
                 self.assertIsInstance(result, dict)
                 self.assertGreater(len(result), 0)
+
+
+class TestODataQueryOptimization(TestCase):
+    """Test automatic query optimization with $expand."""
+
+    def setUp(self):
+        # Create sample data
+        self.user = User.objects.create_user(username="testuser", email="test@example.com")
+        self.author = Author.objects.create(user=self.user, bio="Test Bio")
+        self.category = Category.objects.create(name="Test Category")
+        self.blog_post = BlogPost.objects.create(
+            title="Test Post", slug="test-post", author=self.author, content="Content"
+        )
+        self.blog_post.categories.add(self.category)
+
+        class MockViewSet(ODataMixin, ModelViewSet):
+            queryset = BlogPost.objects.all()
+            serializer_class = None  # Not needed for this test
+
+        self.viewset = MockViewSet()
+        self.factory = RequestFactory()
+
+    @override_settings(DEBUG=True)
+    def test_select_related_optimization(self):
+        """Verify select_related is applied for forward relationships."""
+        request = self.factory.get("/posts/?$expand=author")
+        self.viewset.request = request
+        self.viewset.action = "list"
+
+        with connection.cursor() as cursor:
+            # Clear previous queries
+            connection.queries_log.clear()
+            self.viewset.get_queryset()
+            # Check if 'JOIN' is present in the queries for 'author'
+            self.assertTrue(
+                any("JOIN" in q["sql"] and "author" in q["sql"] for q in connection.queries_log),
+                "select_related for 'author' should generate a JOIN query",
+            )
+
+    @override_settings(DEBUG=True)
+    def test_prefetch_related_optimization(self):
+        """Verify prefetch_related is applied for reverse relationships."""
+        # Change viewset to Author to test reverse relationship 'posts'
+        class MockAuthorViewSet(ODataMixin, ModelViewSet):
+            queryset = Author.objects.all()
+            serializer_class = None  # Not needed for this test
+
+        author_viewset = MockAuthorViewSet()
+        request = self.factory.get("/authors/?$expand=posts")
+        author_viewset.request = request
+        author_viewset.action = "list"
+
+        with connection.cursor() as cursor:
+            # Clear previous queries
+            connection.queries_log.clear()
+            author_viewset.get_queryset()
+            # Check if multiple SELECT queries are generated for 'posts'
+            # (one for authors, one for posts)
+            select_queries = [q["sql"] for q in connection.queries_log if q["sql"].startswith("SELECT")]
+            self.assertGreaterEqual(
+                len(select_queries),
+                2,
+                "prefetch_related for 'posts' should generate at least two SELECT queries",
+            )
+            self.assertTrue(
+                any("blog_blogpost" in q for q in select_queries),
+                "A SELECT query for 'blog_blogpost' should be present",
+            )
 
 
 if __name__ == "__main__":

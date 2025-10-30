@@ -9,7 +9,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="django-odata",
-    version="0.1.0",
+    version="2.0.0",
     author="Muhammad Abdugafarov",
     author_email="iam.markjobs@gmail.com",
     description="Bringing OData Standards to Django - A comprehensive package implementing OData v4 specification for REST APIs with powerful querying capabilities and enterprise-grade functionality",
@@ -39,7 +39,6 @@ setup(
     install_requires=[
         "Django>=4.2",
         "djangorestframework>=3.12.0",
-        "drf-flex-fields>=1.0.0",
         "odata-query>=0.9.0",
     ],
     extras_require={

@@ -26,6 +26,15 @@ class AuthorSerializer(ODataModelSerializer):
         expandable_fields = {
             "posts": ("blog.serializers.BlogPostSerializer", {"many": True}),
         }
+    
+    def create(self, validated_data):
+        """Crea un Author assignant automàticament el request.user."""
+        # Obtenir el user del request
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            validated_data['user'] = request.user
+        
+        return super().create(validated_data)
 
 
 class CommentSerializer(ODataModelSerializer):

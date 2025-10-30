@@ -11,6 +11,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from .native_fields import parse_expand_fields
 from .utils import apply_odata_query_params, build_odata_metadata, parse_odata_query
 
 logger = logging.getLogger(__name__)
@@ -66,176 +67,9 @@ class ODataSerializerMixin:
 
         return data
 
-    def __init__(self, *args, **kwargs):
-        # Process OData params BEFORE calling super().__init__
-        # so that drf-flex-fields sees the updated query_params
-        self._process_odata_params_before_init(*args, **kwargs)
-        super().__init__(*args, **kwargs)
-
-    def _process_odata_params_before_init(self, *args, **kwargs):
-        """
-        Process OData-specific query parameters before initialization.
-        This ensures drf-flex-fields sees the mapped parameters.
-        """
-        context = self._extract_context(*args, **kwargs)
-        if not context:
-            return
-
-        odata_params = context.get("odata_params", {})
-        request = context.get("request")
-
-        if not request or not odata_params:
-            return
-
-        select_fields, expand_fields = self._process_select_and_expand(odata_params)
-        self._update_request_params(request, select_fields, expand_fields)
-
-    def _extract_context(self, *args, **kwargs):
-        """Extract context from args or kwargs."""
-        context = kwargs.get("context")
-        if context is None and len(args) > 0:
-            # Check if first arg has context
-            if hasattr(args[0], "context"):
-                context = args[0].context
-        return context
-
-    def _process_select_and_expand(self, odata_params):
-        """Process $select and $expand parameters."""
-        select_fields = []
-        expand_fields = []
-
-        # Handle $select parameter
-        if "$select" in odata_params:
-            select_value = odata_params["$select"]
-            if isinstance(select_value, list):
-                select_value = select_value[0] if select_value else ""
-            select_fields = [f.strip() for f in select_value.split(",") if f.strip()]
-
-        # Handle $expand parameter
-        nested_field_selections = []
-        if "$expand" in odata_params:
-            expand_value = odata_params["$expand"]
-            if isinstance(expand_value, list):
-                expand_value = expand_value[0] if expand_value else ""
-            expand_fields, nested_field_selections = self._parse_expand_expression(
-                expand_value
-            )
-
-        # Auto-add expanded properties to select fields
-        for expand_field in expand_fields:
-            if expand_field not in select_fields:
-                select_fields.append(expand_field)
-
-        # Add nested field selections to the main select fields
-        select_fields.extend(nested_field_selections)
-
-        return select_fields, expand_fields
-
-    def _update_request_params(self, request, select_fields, expand_fields):
-        """Update request query parameters with processed fields."""
-        # Import QueryDict here to avoid circular imports
-        from django.http import QueryDict
-
-        # Ensure query_params exists and is mutable
-        if not hasattr(request, "query_params"):
-            request.query_params = QueryDict(mutable=True)
-        elif hasattr(request.query_params, "_mutable"):
-            request.query_params._mutable = True
-
-        # Set the processed fields only if we have specific fields to select
-        if select_fields:
-            request.query_params["fields"] = ",".join(select_fields)
-
-        # Set expand fields if any
-        if expand_fields:
-            request.query_params["expand"] = ",".join(expand_fields)
-
-        if hasattr(request.query_params, "_mutable"):
-            request.query_params._mutable = False
-
-    def _parse_expand_expression(self, expand_value):
-        """
-        Parse OData $expand expressions and convert them to drf-flex-fields format.
-
-        Supports:
-        - Simple: "author"
-        - Multiple: "author,categories"
-        - Nested with $select: "posts($select=id,title,slug,status)"
-        - Mixed: "author,posts($select=id,title)"
-
-        Returns tuple: (expand_fields, nested_field_selections)
-        """
-        if not expand_value:
-            return [], []
-
-        expand_fields = []
-        nested_field_selections = []
-
-        # Split by comma, but be careful with nested expressions
-        current_field = ""
-        paren_depth = 0
-
-        for char in expand_value + ",":  # Add comma to process last field
-            if char == "(" and not paren_depth:
-                # Start of nested expression
-                paren_depth += 1
-                current_field += char
-            elif char == "(":
-                paren_depth += 1
-                current_field += char
-            elif char == ")":
-                paren_depth -= 1
-                current_field += char
-            elif char == "," and paren_depth == 0:
-                # End of field at top level
-                if current_field.strip():
-                    field_name, nested_fields = self._process_expand_field(
-                        current_field.strip()
-                    )
-                    expand_fields.append(field_name)
-                    nested_field_selections.extend(nested_fields)
-                current_field = ""
-            else:
-                current_field += char
-
-        return expand_fields, nested_field_selections
-
-    def _process_expand_field(self, field):
-        """
-        Process a single expand field, converting OData nested syntax to drf-flex-fields format.
-
-        Converts: "posts($select=id,title,slug,status)"
-        To: returns tuple ("posts", ["posts.id", "posts.title", "posts.slug", "posts.status"])
-
-        For simple fields like "posts", returns ("posts", [])
-        """
-        if "($select=" not in field:
-            # Simple field without nested selection
-            return field, []
-
-        # Parse nested expression: field_name($select=field1,field2,...)
-        field_name = field.split("(")[0]
-
-        # Extract the content inside parentheses
-        start_paren = field.find("(")
-        end_paren = field.rfind(")")
-
-        if start_paren == -1 or end_paren == -1:
-            return field, []  # Malformed, return as simple field
-
-        inner_content = field[start_paren + 1 : end_paren]
-
-        # Parse the $select parameter
-        if inner_content.startswith("$select="):
-            select_fields = inner_content[8:]  # Remove "$select="
-            nested_fields = [
-                f"{field_name}.{f.strip()}"
-                for f in select_fields.split(",")
-                if f.strip()
-            ]
-            return field_name, nested_fields
-
-        return field, []  # Return as simple field if not a $select expression
+    # Note: Field selection and expansion are now handled by
+    # NativeFieldSelectionMixin and NativeFieldExpansionMixin
+    # No need for FlexFields-specific parameter mapping
 
 
 class ODataMixin:
@@ -267,7 +101,15 @@ class ODataMixin:
         odata_params = self.get_odata_query_params()
 
         try:
-            return apply_odata_query_params(queryset, odata_params)
+            queryset = apply_odata_query_params(queryset, odata_params)
+
+            # Add any custom business logic here
+            # For example, only show published posts to non-staff users
+            user = getattr(self.request, "user", None)
+            if user and not user.is_staff:
+                if hasattr(queryset.model, "status"):
+                    queryset = queryset.filter(status="published")
+            return queryset
         except Exception as e:
             logger.error(f"Error applying OData query: {e}")
             # Return original queryset if query fails
@@ -303,7 +145,7 @@ class ODataMixin:
         )
 
     def _get_expand_fields(self):
-        """Extract expand fields from OData parameters."""
+        """Extract expand fields from OData parameters using native parser."""
         odata_params = self.get_odata_query_params()
 
         if "$expand" not in odata_params:
@@ -316,8 +158,9 @@ class ODataMixin:
         if not expand_value:
             return []
 
-        expand_fields, _ = self._parse_expand_expression(expand_value)
-        return expand_fields
+        # Use native parser to extract field names
+        expand_dict = parse_expand_fields(expand_value)
+        return list(expand_dict.keys())
 
     def _categorize_expand_fields(self, model, expand_fields):
         """Categorize fields into select_related vs prefetch_related."""
@@ -353,45 +196,6 @@ class ODataMixin:
             queryset = queryset.prefetch_related(*prefetch_related_fields)
 
         return queryset
-
-    def _parse_expand_expression(self, expand_value):
-        """
-        Parse OData $expand expressions to extract field names.
-
-        This is a simplified version that just extracts the main field names for optimization.
-        The full parsing is done in the serializer mixin.
-        """
-        if not expand_value:
-            return [], []
-
-        expand_fields = []
-
-        # Split by comma, but be careful with nested expressions
-        current_field = ""
-        paren_depth = 0
-
-        for char in expand_value + ",":  # Add comma to process last field
-            if char == "(" and not paren_depth:
-                # Start of nested expression
-                paren_depth += 1
-                current_field += char
-            elif char == "(":
-                paren_depth += 1
-                current_field += char
-            elif char == ")":
-                paren_depth -= 1
-                current_field += char
-            elif char == "," and paren_depth == 0:
-                # End of field at top level
-                if current_field.strip():
-                    # Extract just the field name (before any parentheses)
-                    field_name = current_field.strip().split("(")[0]
-                    expand_fields.append(field_name)
-                current_field = ""
-            else:
-                current_field += char
-
-        return expand_fields, []
 
     def get_serializer_context(self):
         """

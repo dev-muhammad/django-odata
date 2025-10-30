@@ -17,12 +17,14 @@ ALLOWED_HOSTS = ["*"]
 
 # Application definition - minimal setup for unit tests
 INSTALLED_APPS = [
+    "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "rest_framework",
-    "rest_flex_fields",
     "django_odata",
     "tests",  # For unit test models
+    "tests.integration.support",  # For integration tests
+    "example.blog",  # For performance tests
 ]
 
 # Database - in-memory SQLite for unit tests
@@ -57,3 +59,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Test settings
 USE_TZ = True  # Required for timezone-aware datetime fields
+
+# URL configuration for tests
+ROOT_URLCONF = "example.example.urls"

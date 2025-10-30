@@ -1,145 +1,55 @@
 """
-OData-compatible serializers that extend drf-flex-fields functionality.
+OData-compatible serializers with native field selection and expansion.
 """
 
 from typing import Any, Dict
 
-from rest_flex_fields import FlexFieldsModelSerializer
-from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 
 from .mixins import ODataSerializerMixin
+from .native_fields import NativeFieldSelectionMixin, NativeFieldExpansionMixin
 
 
 class ODataSerializer(
-    ODataSerializerMixin, FlexFieldsSerializerMixin, serializers.Serializer
+    ODataSerializerMixin,
+    NativeFieldSelectionMixin,
+    NativeFieldExpansionMixin,
+    serializers.Serializer
 ):
     """
-    Base OData serializer that combines FlexFields and OData functionality.
+    Base OData serializer with native field selection and expansion.
 
     This serializer provides:
-    - Dynamic field selection via 'fields' and 'omit' parameters
-    - Field expansion via 'expand' parameter
+    - Dynamic field selection via $select parameter
+    - Field expansion via $expand parameter
     - OData context information
     - Support for OData query options
+
+    The serializer uses native implementations instead of drf-flex-fields,
+    providing better performance and simpler maintenance.
     """
-
-    def __init__(self, *args, **kwargs):
-        # Process OData params BEFORE calling super().__init__
-        # so that drf-flex-fields sees the updated query_params
-        self._process_odata_params_before_init(*args, **kwargs)
-        super().__init__(*args, **kwargs)
-
-    def _process_odata_params(self):
-        """
-        Process OData-specific query parameters.
-        """
-        if not hasattr(self, "context") or not self.context:
-            return
-
-        odata_params = self.context.get("odata_params", {})
-
-        # Handle $select parameter (maps to fields for drf-flex-fields)
-        if "$select" in odata_params:
-            select_fields = [f.strip() for f in odata_params["$select"].split(",")]
-            if not hasattr(self.context, "request"):
-                self.context["request"] = type(
-                    "MockRequest",
-                    (),
-                    {"query_params": {"fields": ",".join(select_fields)}},
-                )()
-            else:
-                # Update existing query params to map $select to fields
-                if hasattr(self.context["request"], "query_params"):
-                    # For QueryDict objects, we need to handle them properly
-                    if hasattr(self.context["request"].query_params, "_mutable"):
-                        self.context["request"].query_params._mutable = True
-                        self.context["request"].query_params["fields"] = ",".join(
-                            select_fields
-                        )
-                        self.context["request"].query_params._mutable = False
-                    else:
-                        # For regular dict objects in tests
-                        self.context["request"].query_params["fields"] = ",".join(
-                            select_fields
-                        )
-
-        # Handle $expand parameter
-        if "$expand" in odata_params:
-            expand_fields = [f.strip() for f in odata_params["$expand"].split(",")]
-            if not hasattr(self.context, "request"):
-                self.context["request"] = type(
-                    "MockRequest",
-                    (),
-                    {"query_params": {"expand": ",".join(expand_fields)}},
-                )()
-            else:
-                # Update existing query params
-                query_params = self.context["request"].query_params.copy()
-                query_params["expand"] = ",".join(expand_fields)
-                self.context["request"].query_params = query_params
+    pass
 
 
-class ODataModelSerializer(ODataSerializerMixin, FlexFieldsModelSerializer):
+class ODataModelSerializer(
+    ODataSerializerMixin,
+    NativeFieldSelectionMixin,
+    NativeFieldExpansionMixin,
+    serializers.ModelSerializer
+):
     """
-    OData-compatible model serializer that extends FlexFieldsModelSerializer.
+    OData-compatible model serializer with native field selection and expansion.
 
     This serializer provides:
-    - All FlexFieldsModelSerializer functionality
+    - Dynamic field selection via $select parameter
+    - Field expansion via $expand parameter
     - OData context information
     - Support for OData query options ($select, $expand)
     - Automatic field type detection for metadata generation
+
+    The serializer uses native implementations instead of drf-flex-fields,
+    providing better performance and simpler maintenance.
     """
-
-    def _process_odata_params(self):
-        """
-        Process OData-specific query parameters.
-        """
-        if not hasattr(self, "context") or not self.context:
-            return
-
-        odata_params = self.context.get("odata_params", {})
-
-        # Handle $select parameter (maps to fields)
-        if "$select" in odata_params:
-            select_fields = [f.strip() for f in odata_params["$select"].split(",")]
-            if not hasattr(self.context, "request"):
-                self.context["request"] = type(
-                    "MockRequest",
-                    (),
-                    {"query_params": {"fields": ",".join(select_fields)}},
-                )()
-            else:
-                # Update existing query params
-                if hasattr(self.context["request"], "query_params"):
-                    query_params = self.context["request"].query_params.copy()
-                    query_params["fields"] = ",".join(select_fields)
-                    self.context["request"].query_params = query_params
-
-        # Handle $expand parameter
-        if "$expand" in odata_params:
-            expand_fields = [f.strip() for f in odata_params["$expand"].split(",")]
-            if not hasattr(self.context, "request"):
-                self.context["request"] = type(
-                    "MockRequest",
-                    (),
-                    {"query_params": {"expand": ",".join(expand_fields)}},
-                )()
-            else:
-                # Update existing query params to map $expand to expand
-                if hasattr(self.context["request"], "query_params"):
-                    # For QueryDict objects, we need to handle them properly
-                    if hasattr(self.context["request"].query_params, "_mutable"):
-                        self.context["request"].query_params._mutable = True
-                        self.context["request"].query_params["expand"] = ",".join(
-                            expand_fields
-                        )
-                        self.context["request"].query_params._mutable = False
-                    else:
-                        # For regular dict objects in tests
-                        self.context["request"].query_params["expand"] = ",".join(
-                            expand_fields
-                        )
 
     def get_field_info(self) -> Dict[str, Dict[str, Any]]:
         """

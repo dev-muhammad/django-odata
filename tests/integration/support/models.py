@@ -34,7 +34,7 @@ class ODataTestModel(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
 
     class Meta:
-        app_label = "integration_support"
+        pass
 
 
 class ODataRelatedModel(models.Model):
@@ -47,7 +47,7 @@ class ODataRelatedModel(models.Model):
     value = models.IntegerField()
 
     class Meta:
-        app_label = "integration_support"
+        pass
 
 
 class PerformanceTestModel(models.Model):
@@ -64,7 +64,6 @@ class PerformanceTestModel(models.Model):
     rating = models.DecimalField(max_digits=3, decimal_places=2, null=True, blank=True)
 
     class Meta:
-        app_label = "integration_support"
         indexes = [
             models.Index(fields=["category", "is_available"]),
             models.Index(fields=["price", "quantity"]),
@@ -82,4 +81,4 @@ class PerformanceRelatedModel(models.Model):
     weight = models.IntegerField()
 
     class Meta:
-        app_label = "integration_support"
+        pass
