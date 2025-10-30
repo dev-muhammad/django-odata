@@ -69,53 +69,65 @@ fc-django-odata/
 
 ### Environment Setup
 ```bash
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Sync dependencies with uv (creates venv automatically)
+uv sync --group dev
 
-# Install development dependencies
-pip install -e .[dev]
+# Install package in development mode
+uv pip install -e .
 ```
 
 ### Testing
 ```bash
 # Run all tests
-pytest
+uv run pytest
 
 # Run with coverage
-pytest --cov=django_odata --cov-report=html
+uv run pytest --cov=django_odata --cov-report=html
 
 # Run specific test file
-pytest tests/test_serializers.py
+uv run pytest tests/test_serializers.py
 
 # Run integration tests only
-pytest tests/integration/
+uv run pytest tests/integration/
 
 # Run performance benchmarks
-pytest tests/performance/ --benchmark-only
+uv run pytest tests/performance/ --benchmark-only
+
+# Or use Makefile shortcuts
+make test              # Run all tests
+make test-unit         # Run unit tests only
+make test-coverage     # Run with coverage
 ```
 
 ### Code Quality
 ```bash
 # Format code
-black django_odata/ tests/
+uv run black django_odata/ tests/
 
 # Sort imports
-isort django_odata/ tests/
+uv run isort django_odata/ tests/
 
 # Lint code
-flake8 django_odata/ tests/
+uv run flake8 django_odata/ tests/
 
 # Type checking
-mypy django_odata/
+uv run mypy django_odata/
+
+# Or use Makefile shortcuts
+make format    # Format code with black and isort
+make lint      # Run linters
 ```
 
 ### Example Project
 ```bash
 # Run example project
 cd example/
-python manage.py migrate
-python manage.py runserver
+uv run python manage.py migrate
+uv run python manage.py runserver
+
+# Or use Makefile shortcuts
+make example-setup    # Setup database
+make example-run      # Run server
 
 # Test OData endpoints
 curl "http://localhost:8000/odata/posts/"
