@@ -6,11 +6,12 @@ parsing complex $expand expressions with nested query options.
 """
 
 import pytest
+
 from django_odata.utils import (
-    parse_expand_fields_v2,
-    _parse_single_expand_field_v2,
     _parse_query_options,
+    _parse_single_expand_field_v2,
     _parse_single_query_option,
+    parse_expand_fields_v2,
 )
 
 
@@ -44,56 +45,32 @@ class TestParseExpandFieldsV2:
     def test_expansion_with_select(self):
         """Test expansion with $select option."""
         result = parse_expand_fields_v2("author($select=name,email)")
-        assert result == {
-            "author": {
-                "$select": "name,email"
-            }
-        }
+        assert result == {"author": {"$select": "name,email"}}
 
     def test_expansion_with_filter(self):
         """Test expansion with $filter option."""
         result = parse_expand_fields_v2("posts($filter=published eq true)")
-        assert result == {
-            "posts": {
-                "$filter": "published eq true"
-            }
-        }
+        assert result == {"posts": {"$filter": "published eq true"}}
 
     def test_expansion_with_orderby(self):
         """Test expansion with $orderby option."""
         result = parse_expand_fields_v2("posts($orderby=publishedAt desc)")
-        assert result == {
-            "posts": {
-                "$orderby": "publishedAt desc"
-            }
-        }
+        assert result == {"posts": {"$orderby": "publishedAt desc"}}
 
     def test_expansion_with_top(self):
         """Test expansion with $top option."""
         result = parse_expand_fields_v2("posts($top=10)")
-        assert result == {
-            "posts": {
-                "$top": "10"
-            }
-        }
+        assert result == {"posts": {"$top": "10"}}
 
     def test_expansion_with_skip(self):
         """Test expansion with $skip option."""
         result = parse_expand_fields_v2("posts($skip=5)")
-        assert result == {
-            "posts": {
-                "$skip": "5"
-            }
-        }
+        assert result == {"posts": {"$skip": "5"}}
 
     def test_expansion_with_count(self):
         """Test expansion with $count option."""
         result = parse_expand_fields_v2("posts($count=true)")
-        assert result == {
-            "posts": {
-                "$count": "true"
-            }
-        }
+        assert result == {"posts": {"$count": "true"}}
 
     def test_expansion_with_multiple_options(self):
         """Test expansion with multiple query options."""
@@ -128,11 +105,7 @@ class TestParseExpandFieldsV2:
     def test_nested_expansion(self):
         """Test nested $expand within $expand."""
         result = parse_expand_fields_v2("author($expand=posts($top=3))")
-        assert result == {
-            "author": {
-                "$expand": "posts($top=3)"
-            }
-        }
+        assert result == {"author": {"$expand": "posts($top=3)"}}
 
     def test_complex_nested_expansion(self):
         """Test complex nested expansion with multiple levels."""
@@ -140,10 +113,7 @@ class TestParseExpandFieldsV2:
             "author($select=name;$expand=posts($select=title;$top=3))"
         )
         assert result == {
-            "author": {
-                "$select": "name",
-                "$expand": "posts($select=title;$top=3)"
-            }
+            "author": {"$select": "name", "$expand": "posts($select=title;$top=3)"}
         }
 
     def test_multiple_expansions_with_options(self):
@@ -152,15 +122,9 @@ class TestParseExpandFieldsV2:
             "author($select=name,email),categories($filter=active eq true),tags($orderby=name)"
         )
         assert result == {
-            "author": {
-                "$select": "name,email"
-            },
-            "categories": {
-                "$filter": "active eq true"
-            },
-            "tags": {
-                "$orderby": "name"
-            }
+            "author": {"$select": "name,email"},
+            "categories": {"$filter": "active eq true"},
+            "tags": {"$orderby": "name"},
         }
 
     def test_mixed_simple_and_complex_expansions(self):
@@ -169,13 +133,9 @@ class TestParseExpandFieldsV2:
             "author($select=name),categories,tags($orderby=name)"
         )
         assert result == {
-            "author": {
-                "$select": "name"
-            },
+            "author": {"$select": "name"},
             "categories": {},
-            "tags": {
-                "$orderby": "name"
-            }
+            "tags": {"$orderby": "name"},
         }
 
     def test_expansion_with_spaces(self):
@@ -184,10 +144,7 @@ class TestParseExpandFieldsV2:
             "author ( $select = name , email ; $filter = active eq true )"
         )
         assert result == {
-            "author": {
-                "$select": "name , email",
-                "$filter": "active eq true"
-            }
+            "author": {"$select": "name , email", "$filter": "active eq true"}
         }
 
     def test_filter_with_complex_expression(self):
@@ -195,11 +152,7 @@ class TestParseExpandFieldsV2:
         result = parse_expand_fields_v2(
             "posts($filter=published eq true and views gt 100)"
         )
-        assert result == {
-            "posts": {
-                "$filter": "published eq true and views gt 100"
-            }
-        }
+        assert result == {"posts": {"$filter": "published eq true and views gt 100"}}
 
     def test_filter_with_string_literals(self):
         """Test $filter with string literals containing special characters."""
@@ -207,9 +160,7 @@ class TestParseExpandFieldsV2:
             "posts($filter=status eq 'pending' or status eq 'approved')"
         )
         assert result == {
-            "posts": {
-                "$filter": "status eq 'pending' or status eq 'approved'"
-            }
+            "posts": {"$filter": "status eq 'pending' or status eq 'approved'"}
         }
 
 
@@ -224,7 +175,9 @@ class TestParseSingleExpandFieldV2:
 
     def test_field_with_select(self):
         """Test parsing field with $select option."""
-        field_name, options = _parse_single_expand_field_v2("author($select=name,email)")
+        field_name, options = _parse_single_expand_field_v2(
+            "author($select=name,email)"
+        )
         assert field_name == "author"
         assert options == {"$select": "name,email"}
 
@@ -237,7 +190,7 @@ class TestParseSingleExpandFieldV2:
         assert options == {
             "$select": "title",
             "$filter": "published eq true",
-            "$top": "5"
+            "$top": "5",
         }
 
     def test_malformed_field_missing_closing_paren(self):
@@ -272,28 +225,19 @@ class TestParseQueryOptions:
     def test_multiple_options(self):
         """Test parsing multiple query options."""
         result = _parse_query_options("$select=name;$filter=active eq true;$top=5")
-        assert result == {
-            "$select": "name",
-            "$filter": "active eq true",
-            "$top": "5"
-        }
+        assert result == {"$select": "name", "$filter": "active eq true", "$top": "5"}
 
     def test_nested_expand_option(self):
         """Test parsing nested $expand option."""
         result = _parse_query_options("$select=name;$expand=posts($top=3)")
-        assert result == {
-            "$select": "name",
-            "$expand": "posts($top=3)"
-        }
+        assert result == {"$select": "name", "$expand": "posts($top=3)"}
 
     def test_complex_nested_expand(self):
         """Test parsing complex nested $expand with multiple levels."""
         result = _parse_query_options(
             "$expand=posts($select=title;$expand=comments($top=5))"
         )
-        assert result == {
-            "$expand": "posts($select=title;$expand=comments($top=5))"
-        }
+        assert result == {"$expand": "posts($select=title;$expand=comments($top=5))"}
 
 
 class TestParseSingleQueryOption:

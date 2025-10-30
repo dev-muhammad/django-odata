@@ -26,6 +26,7 @@ def sample_data(db):
     """Create sample data for performance testing."""
     # Create authors
     from django.contrib.auth.models import User
+
     users = [
         User.objects.create_user(
             username=f"author{i}",
@@ -36,22 +37,18 @@ def sample_data(db):
         for i in range(10)
     ]
     authors = [
-        Author.objects.create(
-            user=users[i],
-            bio=f"Bio for author {i}"
-        )
+        Author.objects.create(user=users[i], bio=f"Bio for author {i}")
         for i in range(10)
     ]
-    
+
     # Create categories
     categories = [
         Category.objects.create(
-            name=f"Category {i}",
-            description=f"Description for category {i}"
+            name=f"Category {i}", description=f"Description for category {i}"
         )
         for i in range(5)
     ]
-    
+
     # Create blog posts
     posts = []
     for i in range(100):
@@ -61,62 +58,61 @@ def sample_data(db):
             content=f"Content for post {i}" * 10,  # Make content longer
             status="published" if i % 2 == 0 else "draft",
             author=authors[i % len(authors)],
-            view_count=i * 10
+            view_count=i * 10,
         )
         # Add categories
         post.categories.set([categories[i % len(categories)]])
         posts.append(post)
-    
-    return {
-        'authors': authors,
-        'categories': categories,
-        'posts': posts
-    }
+
+    return {"authors": authors, "categories": categories, "posts": posts}
 
 
 @pytest.mark.benchmark
 class TestFieldSelectionPerformance:
     """Benchmark $select query performance with drf-flex-fields."""
-    
+
     def test_select_single_field(self, benchmark, api_factory, sample_data):
         """Measure performance of selecting a single field."""
-        from example.example.urls import urlpatterns
         from django.urls import resolve
-        
+
+        from example.example.urls import urlpatterns
+
         def run_query():
-            request = api_factory.get('/posts/', {'$select': 'id'})
-            view = resolve('/api/posts/').func
+            request = api_factory.get("/posts/", {"$select": "id"})
+            view = resolve("/api/posts/").func
             response = view(request)
             return response
-        
+
         result = benchmark(run_query)
         assert result.status_code == 200
-    
+
     def test_select_multiple_fields(self, benchmark, api_factory, sample_data):
         """Measure performance of selecting multiple fields."""
-        from example.example.urls import urlpatterns
         from django.urls import resolve
-        
+
+        from example.example.urls import urlpatterns
+
         def run_query():
-            request = api_factory.get('/posts/', {'$select': 'id,title,status'})
-            view = resolve('/api/posts/').func
+            request = api_factory.get("/posts/", {"$select": "id,title,status"})
+            view = resolve("/api/posts/").func
             response = view(request)
             return response
-        
+
         result = benchmark(run_query)
         assert result.status_code == 200
-    
+
     def test_select_all_fields(self, benchmark, api_factory, sample_data):
         """Measure performance with no $select (all fields)."""
-        from example.example.urls import urlpatterns
         from django.urls import resolve
-        
+
+        from example.example.urls import urlpatterns
+
         def run_query():
-            request = api_factory.get('/posts/')
-            view = resolve('/api/posts/').func
+            request = api_factory.get("/posts/")
+            view = resolve("/api/posts/").func
             response = view(request)
             return response
-        
+
         result = benchmark(run_query)
         assert result.status_code == 200
 
@@ -124,49 +120,51 @@ class TestFieldSelectionPerformance:
 @pytest.mark.benchmark
 class TestFieldExpansionPerformance:
     """Benchmark $expand query performance with drf-flex-fields."""
-    
+
     def test_expand_single_relation(self, benchmark, api_factory, sample_data):
         """Measure performance of expanding a single relation."""
-        from example.example.urls import urlpatterns
         from django.urls import resolve
-        
+
+        from example.example.urls import urlpatterns
+
         def run_query():
-            request = api_factory.get('/posts/', {'$expand': 'author'})
-            view = resolve('/api/posts/').func
+            request = api_factory.get("/posts/", {"$expand": "author"})
+            view = resolve("/api/posts/").func
             response = view(request)
             return response
-        
+
         result = benchmark(run_query)
         assert result.status_code == 200
-    
+
     def test_expand_multiple_relations(self, benchmark, api_factory, sample_data):
         """Measure performance of expanding multiple relations."""
-        from example.example.urls import urlpatterns
         from django.urls import resolve
-        
+
+        from example.example.urls import urlpatterns
+
         def run_query():
-            request = api_factory.get('/posts/', {'$expand': 'author,categories'})
-            view = resolve('/api/posts/').func
+            request = api_factory.get("/posts/", {"$expand": "author,categories"})
+            view = resolve("/api/posts/").func
             response = view(request)
             return response
-        
+
         result = benchmark(run_query)
         assert result.status_code == 200
-    
+
     def test_expand_with_nested_select(self, benchmark, api_factory, sample_data):
         """Measure performance of expansion with nested field selection."""
-        from example.example.urls import urlpatterns
         from django.urls import resolve
-        
+
+        from example.example.urls import urlpatterns
+
         def run_query():
             request = api_factory.get(
-                '/posts/',
-                {'$expand': 'author($select=name,email)'}
+                "/posts/", {"$expand": "author($select=name,email)"}
             )
-            view = resolve('/api/posts/').func
+            view = resolve("/api/posts/").func
             response = view(request)
             return response
-        
+
         result = benchmark(run_query)
         assert result.status_code == 200
 
@@ -174,47 +172,45 @@ class TestFieldExpansionPerformance:
 @pytest.mark.benchmark
 class TestCombinedQueryPerformance:
     """Benchmark combined $select + $expand queries."""
-    
+
     def test_select_and_expand(self, benchmark, api_factory, sample_data):
         """Measure performance of combined select and expand."""
-        from example.example.urls import urlpatterns
         from django.urls import resolve
-        
+
+        from example.example.urls import urlpatterns
+
         def run_query():
             request = api_factory.get(
-                '/posts/',
-                {
-                    '$select': 'id,title,status',
-                    '$expand': 'author'
-                }
+                "/posts/", {"$select": "id,title,status", "$expand": "author"}
             )
-            view = resolve('/api/posts/').func
+            view = resolve("/api/posts/").func
             response = view(request)
             return response
-        
+
         result = benchmark(run_query)
         assert result.status_code == 200
-    
+
     def test_complex_query(self, benchmark, api_factory, sample_data):
         """Measure performance of complex query with multiple operations."""
-        from example.example.urls import urlpatterns
         from django.urls import resolve
-        
+
+        from example.example.urls import urlpatterns
+
         def run_query():
             request = api_factory.get(
-                '/posts/',
+                "/posts/",
                 {
-                    '$select': 'id,title,status',
-                    '$expand': 'author($select=name,email),categories',
-                    '$filter': "status eq 'published'",
-                    '$orderby': 'created_at desc',
-                    '$top': '20'
-                }
+                    "$select": "id,title,status",
+                    "$expand": "author($select=name,email),categories",
+                    "$filter": "status eq 'published'",
+                    "$orderby": "created_at desc",
+                    "$top": "20",
+                },
             )
-            view = resolve('/api/posts/').func
+            view = resolve("/api/posts/").func
             response = view(request)
             return response
-        
+
         result = benchmark(run_query)
         assert result.status_code == 200
 
@@ -222,54 +218,52 @@ class TestCombinedQueryPerformance:
 @pytest.mark.benchmark
 class TestSerializationPerformance:
     """Benchmark serialization performance."""
-    
+
     def test_serialize_100_posts_no_expansion(self, benchmark, sample_data):
         """Measure serialization time for 100 posts without expansion."""
-        from example.blog.models import BlogPost
         from django_odata.serializers import ODataModelSerializer
-        
+        from example.blog.models import BlogPost
+
         class BlogPostSerializer(ODataModelSerializer):
             class Meta:
                 model = BlogPost
-                fields = ['id', 'title', 'content', 'status', 'created_at']
-        
+                fields = ["id", "title", "content", "status", "created_at"]
+
         posts = BlogPost.objects.all()[:100]
-        
+
         def serialize():
             serializer = BlogPostSerializer(posts, many=True)
             return serializer.data
-        
+
         result = benchmark(serialize)
         assert len(result) == 100
-    
+
     def test_serialize_100_posts_with_expansion(self, benchmark, sample_data):
         """Measure serialization time for 100 posts with author expansion."""
-        from example.blog.models import BlogPost, Author
         from django_odata.serializers import ODataModelSerializer
-        
+        from example.blog.models import Author, BlogPost
+
         class AuthorSerializer(ODataModelSerializer):
             class Meta:
                 model = Author
-                fields = ['id', 'name', 'email']
-        
+                fields = ["id", "name", "email"]
+
         class BlogPostSerializer(ODataModelSerializer):
             class Meta:
                 model = BlogPost
-                fields = ['id', 'title', 'content', 'status', 'created_at']
-                expandable_fields = {
-                    'author': (AuthorSerializer, {'many': False})
-                }
-        
-        posts = BlogPost.objects.select_related('author').all()[:100]
-        
+                fields = ["id", "title", "content", "status", "created_at"]
+                expandable_fields = {"author": (AuthorSerializer, {"many": False})}
+
+        posts = BlogPost.objects.select_related("author").all()[:100]
+
         def serialize():
             context = {
-                'odata_params': {'$expand': 'author'},
-                'request': type('Request', (), {'query_params': {}})()
+                "odata_params": {"$expand": "author"},
+                "request": type("Request", (), {"query_params": {}})(),
             }
             serializer = BlogPostSerializer(posts, many=True, context=context)
             return serializer.data
-        
+
         result = benchmark(serialize)
         assert len(result) == 100
 

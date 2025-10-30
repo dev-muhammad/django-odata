@@ -12,7 +12,12 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .native_fields import parse_expand_fields
-from .utils import apply_odata_query_params, build_odata_metadata, parse_odata_query, parse_expand_fields_v2
+from .utils import (
+    apply_odata_query_params,
+    build_odata_metadata,
+    parse_expand_fields_v2,
+    parse_odata_query,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -133,10 +138,10 @@ class ODataMixin:
     def _apply_field_selection_optimization(self, queryset):
         """
         Apply .only() to fetch only requested fields from database.
-        
+
         This optimization reduces data transfer from database to application by
         fetching only the fields specified in the $select parameter.
-        
+
         Algorithm:
         1. Get $select parameter from OData params
         2. If no $select, return queryset unchanged (fetch all fields)
@@ -144,77 +149,78 @@ class ODataMixin:
         4. Add model's primary key (required by Django)
         5. Add foreign key fields for any expanded relations (required by Django)
         6. Apply .only() with the field list
-        
+
         Args:
             queryset: Base queryset to optimize
-            
+
         Returns:
             Optimized queryset with .only() applied, or original queryset if no optimization needed
-            
+
         Examples:
             >>> # Request: GET /posts?$select=id,title
             >>> # SQL: SELECT id, title FROM posts
-            
+
             >>> # Request: GET /posts?$select=title&$expand=author
             >>> # SQL: SELECT id, title, author_id FROM posts (includes FK for expansion)
         """
         odata_params = self.get_odata_query_params()
-        select_param = odata_params.get('$select')
-        
+        select_param = odata_params.get("$select")
+
         if not select_param:
             return queryset  # No optimization needed
-        
+
         # Parse selected fields
         from .native_fields import parse_select_fields
+
         parsed = parse_select_fields(select_param)
-        selected_fields = parsed['top_level']
-        
+        selected_fields = parsed["top_level"]
+
         if not selected_fields:
             return queryset  # Empty selection, return all fields
-        
+
         # Build field list for .only()
         only_fields = self._build_only_fields_list(
-            queryset.model,
-            selected_fields,
-            odata_params
+            queryset.model, selected_fields, odata_params
         )
-        
+
         if only_fields:
             queryset = queryset.only(*only_fields)
-            logger.debug(f"Applied field selection optimization: only({', '.join(only_fields)})")
-        
+            logger.debug(
+                f"Applied field selection optimization: only({', '.join(only_fields)})"
+            )
+
         return queryset
-    
+
     def _build_only_fields_list(self, model, selected_fields, odata_params):
         """
         Build list of fields for .only() method.
-        
+
         Must include:
         - Requested fields from $select
         - Model's primary key (Django requirement)
         - Foreign key fields for expanded relations (Django requirement)
-        
+
         Args:
             model: Django model class
             selected_fields: List of field names from $select parameter
             odata_params: Dictionary of OData query parameters
-            
+
         Returns:
             List of field names to pass to .only()
-            
+
         Examples:
             >>> _build_only_fields_list(Post, ['title'], {})
             ['id', 'title']  # Includes PK
-            
+
             >>> _build_only_fields_list(Post, ['title'], {'$expand': 'author'})
             ['id', 'title', 'author_id']  # Includes PK and FK
         """
         only_fields = set()
-        
+
         # Always include primary key
         pk_field = model._meta.pk.name
         only_fields.add(pk_field)
-        
+
         # Add only valid database fields from selected_fields
         for field_name in selected_fields:
             try:
@@ -223,27 +229,28 @@ class ODataMixin:
                 only_fields.add(field_name)
             except Exception:
                 # Field doesn't exist or is a property - skip it
-                logger.debug(
-                    f"Skipping non-database field '{field_name}' in $select"
-                )
-        
+                logger.debug(f"Skipping non-database field '{field_name}' in $select")
+
         # Add foreign key fields for expanded relations
-        expand_param = odata_params.get('$expand')
+        expand_param = odata_params.get("$expand")
         if expand_param:
             from .native_fields import parse_expand_fields
+
             expand_fields = parse_expand_fields(expand_param)
-            
+
             for field_name in expand_fields.keys():
                 # Check if it's a forward relation (has FK field)
                 try:
                     field = model._meta.get_field(field_name)
                     # FK and OneToOne fields have 'attname' (e.g., 'author_id' for 'author')
-                    if hasattr(field, 'attname'):
+                    if hasattr(field, "attname"):
                         only_fields.add(field.attname)
-                        logger.debug(f"Added FK field '{field.attname}' for expansion of '{field_name}'")
+                        logger.debug(
+                            f"Added FK field '{field.attname}' for expansion of '{field_name}'"
+                        )
                 except Exception as e:
                     logger.debug(f"Could not add FK for '{field_name}': {e}")
-        
+
         return list(only_fields)
 
     def _optimize_queryset_for_expansions(self, queryset):
@@ -308,79 +315,79 @@ class ODataMixin:
         self, queryset, select_related_fields, prefetch_related_fields
     ):
         """Apply select_related and prefetch_related with field selection optimizations."""
-        
+
         # Apply select_related with field selection
         if select_related_fields:
             queryset = queryset.select_related(*select_related_fields)
-            
+
             # Apply field selection for related models
             queryset = self._apply_related_field_selection(
-                queryset,
-                select_related_fields
+                queryset, select_related_fields
             )
 
         # Apply prefetch_related with field selection
         if prefetch_related_fields:
             queryset = queryset.prefetch_related(*prefetch_related_fields)
-            
+
             # Apply field selection for prefetched models
             queryset = self._apply_prefetch_field_selection(
-                queryset,
-                prefetch_related_fields
+                queryset, prefetch_related_fields
             )
 
         return queryset
-    
+
     def _apply_related_field_selection(self, queryset, select_related_fields):
         """
         Apply field selection to select_related fields using only().
-        
+
         For each related field, determine which fields to fetch based on
         nested $select in $expand parameter.
-        
+
         Args:
             queryset: Queryset with select_related already applied
             select_related_fields: List of field names that were select_related
-            
+
         Returns:
             Queryset with only() applied for related fields
-            
+
         Examples:
             >>> # Request: GET /posts?$expand=author($select=name)
             >>> # Adds: .only('author__id', 'author__name')
         """
         odata_params = self.get_odata_query_params()
-        expand_param = odata_params.get('$expand')
-        
+        expand_param = odata_params.get("$expand")
+
         if not expand_param:
             return queryset
-        
+
         # Parse expand to get nested selections
         from .utils import parse_expand_fields_v2
+
         expand_fields = parse_expand_fields_v2(expand_param)
-        
+
         # Build only() field list including related fields
         only_fields = []
-        
+
         for related_field in select_related_fields:
             if related_field in expand_fields:
-                nested_select = expand_fields[related_field].get('$select')
-                
+                nested_select = expand_fields[related_field].get("$select")
+
                 if nested_select:
                     # Parse nested $select
                     from .native_fields import parse_select_fields
+
                     parsed = parse_select_fields(nested_select)
-                    nested_fields = parsed['top_level']
-                    
+                    nested_fields = parsed["top_level"]
+
                     # Get related model
                     try:
                         field = queryset.model._meta.get_field(related_field)
                         related_model = field.related_model
                         pk_field = related_model._meta.pk.name
-                        
+
                         # Add pk field
                         only_fields.append(f"{related_field}__{pk_field}")
-                        
+
                         # Add only actual database fields (not properties)
                         for nested_field in nested_fields:
                             try:
@@ -393,94 +400,100 @@ class ODataMixin:
                                     f"Skipping non-database field '{nested_field}' "
                                     f"for related model '{related_field}'"
                                 )
-                        
+
                         logger.debug(
                             f"Added related field selection for '{related_field}': "
                             f"{', '.join([f for f in only_fields if f.startswith(related_field)])}"
                         )
                     except Exception as e:
-                        logger.warning(f"Could not optimize fields for {related_field}: {e}")
-        
+                        logger.warning(
+                            f"Could not optimize fields for {related_field}: {e}"
+                        )
+
         if only_fields:
             # Get existing only() fields from main queryset
             existing_only = self._get_existing_only_fields(queryset)
             if existing_only:
                 only_fields.extend(existing_only)
-            
+
             queryset = queryset.only(*only_fields)
-            logger.debug(f"Applied related field selection: only({', '.join(only_fields)})")
-        
+            logger.debug(
+                f"Applied related field selection: only({', '.join(only_fields)})"
+            )
+
         return queryset
-    
+
     def _get_existing_only_fields(self, queryset):
         """
         Extract existing only() fields from queryset.
-        
+
         Args:
             queryset: Django queryset
-            
+
         Returns:
             List of field names currently in only(), or empty list
-            
+
         Examples:
             >>> qs = Model.objects.only('id', 'name')
             >>> _get_existing_only_fields(qs)
             ['id', 'name']
         """
-        deferred_loading = getattr(queryset.query, 'deferred_loading', (None, None))
+        deferred_loading = getattr(queryset.query, "deferred_loading", (None, None))
         if deferred_loading[0]:  # Has only() fields
             return list(deferred_loading[0])
         return []
-    
+
     def _apply_prefetch_field_selection(self, queryset, prefetch_related_fields):
         """
         Apply field selection to prefetch_related fields using Prefetch objects.
-        
+
         For each prefetch_related field, create a Prefetch object with a custom
         queryset that uses only() to limit fields based on nested $select.
-        
+
         Args:
             queryset: Queryset with prefetch_related already applied
             prefetch_related_fields: List of field names that were prefetch_related
-            
+
         Returns:
             Queryset with optimized Prefetch objects
-            
+
         Examples:
             >>> # Request: GET /posts?$expand=categories($select=name)
             >>> # Creates: Prefetch('categories', queryset=Category.objects.only('id', 'name'))
         """
         from django.db.models import Prefetch
-        
+
         odata_params = self.get_odata_query_params()
-        expand_param = odata_params.get('$expand')
-        
+        expand_param = odata_params.get("$expand")
+
         if not expand_param:
             return queryset
-        
+
         # Parse expand to get nested selections
         from .utils import parse_expand_fields_v2
+
         expand_fields = parse_expand_fields_v2(expand_param)
-        
+
         # Build list of Prefetch objects
         prefetch_objects = []
-        
+
         for prefetch_field in prefetch_related_fields:
             if prefetch_field in expand_fields:
-                nested_select = expand_fields[prefetch_field].get('$select')
-                
+                nested_select = expand_fields[prefetch_field].get("$select")
+
                 if nested_select:
                     # Parse nested $select
                     from .native_fields import parse_select_fields
+
                     parsed = parse_select_fields(nested_select)
-                    nested_fields = parsed['top_level']
-                    
+                    nested_fields = parsed["top_level"]
+
                     # Get related model
                     try:
                         # Handle both forward and reverse relations
                         field = None
                         related_model = None
-                        
+
                         # Try to get field from model meta
                         try:
                             field = queryset.model._meta.get_field(prefetch_field)
@@ -491,13 +504,13 @@ class ODataMixin:
                                 if rel.get_accessor_name() == prefetch_field:
                                     related_model = rel.related_model
                                     break
-                        
+
                         if related_model:
                             pk_field = related_model._meta.pk.name
-                            
+
                             # Build only() field list for prefetch queryset
                             only_fields = [pk_field]
-                            
+
                             # Add only actual database fields (not properties)
                             for nested_field in nested_fields:
                                 try:
@@ -510,12 +523,14 @@ class ODataMixin:
                                         f"Skipping non-database field '{nested_field}' "
                                         f"for prefetch model '{prefetch_field}'"
                                     )
-                            
+
                             # Create Prefetch object with optimized queryset
                             prefetch_queryset = related_model.objects.only(*only_fields)
-                            prefetch_obj = Prefetch(prefetch_field, queryset=prefetch_queryset)
+                            prefetch_obj = Prefetch(
+                                prefetch_field, queryset=prefetch_queryset
+                            )
                             prefetch_objects.append(prefetch_obj)
-                            
+
                             logger.debug(
                                 f"Created Prefetch for '{prefetch_field}' with fields: "
                                 f"{', '.join(only_fields)}"
@@ -525,24 +540,33 @@ class ODataMixin:
                                 f"Could not find related model for prefetch field '{prefetch_field}'"
                             )
                     except Exception as e:
-                        logger.warning(f"Could not optimize prefetch for {prefetch_field}: {e}")
-        
+                        logger.warning(
+                            f"Could not optimize prefetch for {prefetch_field}: {e}"
+                        )
+
         if prefetch_objects:
             # Clear existing prefetch_related and apply optimized Prefetch objects
             queryset = queryset._clone()
             queryset._prefetch_related_lookups = ()
             queryset = queryset.prefetch_related(*prefetch_objects)
-            
+
             # Also add any prefetch fields that didn't have nested $select
             remaining_fields = [
-                f for f in prefetch_related_fields
-                if f not in [p.prefetch_to if isinstance(p, Prefetch) else p for p in prefetch_objects]
+                f
+                for f in prefetch_related_fields
+                if f
+                not in [
+                    p.prefetch_to if isinstance(p, Prefetch) else p
+                    for p in prefetch_objects
+                ]
             ]
             if remaining_fields:
                 queryset = queryset.prefetch_related(*remaining_fields)
-            
-            logger.debug(f"Applied prefetch field selection with {len(prefetch_objects)} Prefetch objects")
-        
+
+            logger.debug(
+                f"Applied prefetch field selection with {len(prefetch_objects)} Prefetch objects"
+            )
+
         return queryset
 
     def get_serializer_context(self):

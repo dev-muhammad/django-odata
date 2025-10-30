@@ -6,17 +6,16 @@ existing test models and setup from the main test suite.
 """
 
 import pytest
-from django.http import QueryDict, HttpRequest
-from django.test import TestCase
-from rest_framework.viewsets import ModelViewSet
-from django.test.utils import override_settings
-from django.db import connection
 from django.contrib.auth.models import User
-from example.blog.models import Author, BlogPost, Category
-from django.test import RequestFactory
+from django.db import connection
+from django.http import HttpRequest, QueryDict
+from django.test import RequestFactory, TestCase
+from django.test.utils import override_settings
+from rest_framework.viewsets import ModelViewSet
 
 from django_odata.mixins import ODataMixin
 from django_odata.utils import ODataQueryBuilder, parse_odata_query
+from example.blog.models import Author, BlogPost, Category
 
 
 class TestODataExpressionParsing(TestCase):
@@ -212,6 +211,7 @@ class TestODataMixinIntegration(TestCase):
 
     def setUp(self):
         """Set up test viewset with OData mixin."""
+
         class MockModel:
             objects = self
 
@@ -387,7 +387,9 @@ class TestODataQueryOptimization(TestCase):
 
     def setUp(self):
         # Create sample data
-        self.user = User.objects.create_user(username="testuser", email="test@example.com")
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com"
+        )
         self.author = Author.objects.create(user=self.user, bio="Test Bio")
         self.category = Category.objects.create(name="Test Category")
         self.blog_post = BlogPost.objects.create(
@@ -411,21 +413,26 @@ class TestODataQueryOptimization(TestCase):
 
         # Reset queries
         from django.db import reset_queries
+
         reset_queries()
-        
+
         # Get queryset and force evaluation
         queryset = self.viewset.get_queryset()
         list(queryset)  # Force query execution
-        
+
         # Check if 'JOIN' is present in the queries for 'author'
         self.assertTrue(
-            any("JOIN" in q["sql"].upper() and "author" in q["sql"].lower() for q in connection.queries),
+            any(
+                "JOIN" in q["sql"].upper() and "author" in q["sql"].lower()
+                for q in connection.queries
+            ),
             "select_related for 'author' should generate a JOIN query",
         )
 
     @override_settings(DEBUG=True)
     def test_prefetch_related_optimization(self):
         """Verify prefetch_related is applied for reverse relationships."""
+
         # Change viewset to Author to test reverse relationship 'posts'
         class MockAuthorViewSet(ODataMixin, ModelViewSet):
             queryset = Author.objects.all()
@@ -438,15 +445,20 @@ class TestODataQueryOptimization(TestCase):
 
         # Reset queries
         from django.db import reset_queries
+
         reset_queries()
-        
+
         # Get queryset and force evaluation
         queryset = author_viewset.get_queryset()
         list(queryset)  # Force query execution
-        
+
         # Check if multiple SELECT queries are generated for 'posts'
         # (one for authors, one for posts)
-        select_queries = [q["sql"] for q in connection.queries if q["sql"].upper().startswith("SELECT")]
+        select_queries = [
+            q["sql"]
+            for q in connection.queries
+            if q["sql"].upper().startswith("SELECT")
+        ]
         self.assertGreaterEqual(
             len(select_queries),
             2,
