@@ -214,10 +214,11 @@ This project follows the principles defined in [`.specify/memory/constitution.md
 
 ## Active Features
 
-### Current Sprint: SPEC-001 - Remove drf-flex-fields
-**Branch**: `001-remove-drf-flex-fields`  
-**Priority**: High  
-**Complexity**: Medium  
+### SPEC-001: Remove drf-flex-fields Dependency
+**Status**: ✅ Completed
+**Branch**: `001-remove-drf-flex-fields`
+**Priority**: High
+**Complexity**: Medium
 **Timeline**: 3 weeks development + 2 weeks beta
 
 **Phases**:
@@ -228,6 +229,28 @@ This project follows the principles defined in [`.specify/memory/constitution.md
 5. ✅ Testing (3 days) - Comprehensive validation
 6. ✅ Documentation (2 days) - Update all docs
 7. ✅ Release (1 day) - Final release
+
+### SPEC-003: Optimize Database Queries with Field Selection
+**Status**: 📝 Specification Phase
+**Branch**: Not yet created
+**Priority**: High
+**Complexity**: Medium
+**Timeline**: 1-2 weeks development
+
+**Objective**: Optimize database queries to fetch only requested fields in `$select` parameters, using Django's `.only()` method with `select_related()` and `Prefetch` objects with `prefetch_related()`.
+
+**Expected Impact**:
+- 20-40% performance improvement for queries with field selection
+- Reduced database-to-application data transfer
+- Lower memory usage
+- Faster query execution for tables with many columns
+
+**Phases**:
+1. ⏳ Main Queryset Optimization - Apply `.only()` to base queries
+2. ⏳ select_related Optimization - Field selection for forward relations
+3. ⏳ prefetch_related Optimization - Field selection with Prefetch objects
+4. ⏳ Testing & Validation - Comprehensive testing and benchmarking
+5. ⏳ Documentation - Update docs with performance notes
 
 ## Contact & Resources
 

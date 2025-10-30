@@ -409,15 +409,19 @@ class TestODataQueryOptimization(TestCase):
         self.viewset.request = request
         self.viewset.action = "list"
 
-        with connection.cursor() as cursor:
-            # Clear previous queries
-            connection.queries_log.clear()
-            self.viewset.get_queryset()
-            # Check if 'JOIN' is present in the queries for 'author'
-            self.assertTrue(
-                any("JOIN" in q["sql"] and "author" in q["sql"] for q in connection.queries_log),
-                "select_related for 'author' should generate a JOIN query",
-            )
+        # Reset queries
+        from django.db import reset_queries
+        reset_queries()
+        
+        # Get queryset and force evaluation
+        queryset = self.viewset.get_queryset()
+        list(queryset)  # Force query execution
+        
+        # Check if 'JOIN' is present in the queries for 'author'
+        self.assertTrue(
+            any("JOIN" in q["sql"].upper() and "author" in q["sql"].lower() for q in connection.queries),
+            "select_related for 'author' should generate a JOIN query",
+        )
 
     @override_settings(DEBUG=True)
     def test_prefetch_related_optimization(self):
@@ -432,22 +436,26 @@ class TestODataQueryOptimization(TestCase):
         author_viewset.request = request
         author_viewset.action = "list"
 
-        with connection.cursor() as cursor:
-            # Clear previous queries
-            connection.queries_log.clear()
-            author_viewset.get_queryset()
-            # Check if multiple SELECT queries are generated for 'posts'
-            # (one for authors, one for posts)
-            select_queries = [q["sql"] for q in connection.queries_log if q["sql"].startswith("SELECT")]
-            self.assertGreaterEqual(
-                len(select_queries),
-                2,
-                "prefetch_related for 'posts' should generate at least two SELECT queries",
-            )
-            self.assertTrue(
-                any("blog_blogpost" in q for q in select_queries),
-                "A SELECT query for 'blog_blogpost' should be present",
-            )
+        # Reset queries
+        from django.db import reset_queries
+        reset_queries()
+        
+        # Get queryset and force evaluation
+        queryset = author_viewset.get_queryset()
+        list(queryset)  # Force query execution
+        
+        # Check if multiple SELECT queries are generated for 'posts'
+        # (one for authors, one for posts)
+        select_queries = [q["sql"] for q in connection.queries if q["sql"].upper().startswith("SELECT")]
+        self.assertGreaterEqual(
+            len(select_queries),
+            2,
+            "prefetch_related for 'posts' should generate at least two SELECT queries",
+        )
+        self.assertTrue(
+            any("blog_blogpost" in q.lower() for q in select_queries),
+            "A SELECT query for 'blog_blogpost' should be present",
+        )
 
 
 if __name__ == "__main__":

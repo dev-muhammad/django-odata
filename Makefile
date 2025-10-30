@@ -33,24 +33,24 @@ help:
 	@echo ""
 	@echo "Quick Start:"
 	@echo "  1. make venv          # Create virtual environment"
-	@echo "  2. source venv/bin/activate  # Activate it"
+	@echo "  2. source .venv/bin/activate  # Activate it"
 	@echo "  3. make dev-setup     # Install deps and setup example"
 	@echo "  4. make example-run   # Run the server"
 
 # Virtual Environment
 venv:
 	@echo "Creating Python virtual environment..."
-	python3 -m venv venv
+	python3 -m venv .venv
 	@echo ""
 	@echo "✅ Virtual environment created!"
 	@echo ""
 	@echo "Next steps:"
-	@echo "  1. source venv/bin/activate"
+	@echo "  1. source .venv/bin/activate"
 	@echo "  2. make dev-setup"
 
 venv-activate:
 	@echo "To activate the virtual environment, run:"
-	@echo "  source venv/bin/activate"
+	@echo "  source .venv/bin/activate"
 	@echo ""
 	@echo "To deactivate it later, run:"
 	@echo "  deactivate"
@@ -64,6 +64,7 @@ install-dev:
 
 # Testing
 test:
+	DJANGO_SETTINGS_MODULE=tests.settings pytest tests/ --ignore=tests/performance/ -v
 	DJANGO_SETTINGS_MODULE=tests.settings pytest tests/ --ignore=tests/performance/ -v
 
 test-unit:

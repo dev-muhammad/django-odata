@@ -10,6 +10,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Import parse_expand_fields_v2 from utils to avoid circular dependency
+# This will be imported when needed in _apply_field_expansion
+
 
 def parse_select_fields(select_string: str) -> Dict[str, List[str]]:
     """
@@ -280,36 +283,38 @@ class NativeFieldExpansionMixin:
     """
     
     MAX_EXPANSION_DEPTH = 3  # Prevent infinite recursion
-    
+
     def __init__(self, *args, **kwargs):
         """Initialize serializer and apply field expansion."""
         super().__init__(*args, **kwargs)
+        self._expanded_fields_data = {}  # Store data for expanded fields
         self._apply_field_expansion()
-    
+
     def _apply_field_expansion(self):
         """
         Apply $expand parameter to add related serializers.
-        
+
         Algorithm:
         1. Get $expand from context['odata_params']
         2. Check expansion depth to prevent infinite recursion
-        3. Parse expansion expressions (handle nested $select)
+        3. Parse expansion expressions (handle nested query options)
         4. For each expansion:
            a. Look up serializer in Meta.expandable_fields
            b. Create instance with nested context
            c. Add to self.fields
+           d. Store nested odata_params for later queryset filtering
         """
         # Get OData parameters from context
         if not hasattr(self, 'context') or not self.context:
             return
-        
+
         odata_params = self.context.get('odata_params', {})
         expand_param = odata_params.get('$expand')
-        
+
         if not expand_param:
             # No $expand parameter
             return
-        
+
         # Check expansion depth to prevent infinite recursion
         depth = self.context.get('_expansion_depth', 0)
         if depth >= self.MAX_EXPANSION_DEPTH:
@@ -318,47 +323,62 @@ class NativeFieldExpansionMixin:
                 f"stopping expansion to prevent infinite recursion"
             )
             return
-        
+
         # Get expandable fields configuration
         if not hasattr(self, 'Meta'):
             logger.debug("No Meta class defined")
             return
-            
+
         expandable = getattr(self.Meta, 'expandable_fields', {})
         if not expandable:
             logger.debug("No expandable_fields defined in Meta")
             return
-        
-        # Parse the $expand parameter
-        expand_fields = parse_expand_fields(expand_param)
-        
+
+        # Parse the $expand parameter using the new v2 parser
+        # Import here to avoid circular dependency
+        from .utils import parse_expand_fields_v2
+        expand_fields = parse_expand_fields_v2(expand_param)
+
         # Process each expansion
-        for field_name, nested_select in expand_fields.items():
+        for field_name, options in expand_fields.items():
             if field_name not in expandable:
                 logger.warning(
                     f"Field '{field_name}' in $expand is not in expandable_fields, ignoring"
                 )
                 continue
-            
+
             # Get serializer configuration
             serializer_config = expandable[field_name]
-            serializer_class, options = self._parse_serializer_config(serializer_config)
-            
+            serializer_class, serializer_options = self._parse_serializer_config(serializer_config)
+
             # Create nested context with incremented depth
             nested_context = self.context.copy()
             nested_context['_expansion_depth'] = depth + 1
-            
-            # Add nested $select if provided
-            if nested_select:
-                nested_odata_params = nested_context.get('odata_params', {}).copy()
-                nested_odata_params['$select'] = nested_select
-                nested_context['odata_params'] = nested_odata_params
-            
+
+            # Populate nested_odata_params with all relevant OData query options
+            nested_odata_params = nested_context.get('odata_params', {}).copy()
+            for odata_param in [
+                "$filter",
+                "$orderby",
+                "$top",
+                "$skip",
+                "$count",
+                "$select",
+                "$expand",
+            ]:
+                if odata_param in options:
+                    nested_odata_params[odata_param] = options[odata_param]
+
+            nested_context['odata_params'] = nested_odata_params
+
+            # Store the odata_params for this expanded field
+            self._expanded_fields_data[field_name] = {'odata_params': nested_odata_params}
+
             # Instantiate the related serializer and add to fields
             try:
                 self.fields[field_name] = serializer_class(
                     context=nested_context,
-                    **options
+                    **serializer_options
                 )
                 logger.debug(f"Expanded field '{field_name}' with {serializer_class.__name__}")
             except Exception as e:

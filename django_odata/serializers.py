@@ -2,12 +2,15 @@
 OData-compatible serializers with native field selection and expansion.
 """
 
+import logging
 from typing import Any, Dict
 
 from rest_framework import serializers
 
 from .mixins import ODataSerializerMixin
 from .native_fields import NativeFieldSelectionMixin, NativeFieldExpansionMixin
+
+logger = logging.getLogger(__name__)
 
 
 class ODataSerializer(
@@ -50,6 +53,76 @@ class ODataModelSerializer(
     The serializer uses native implementations instead of drf-flex-fields,
     providing better performance and simpler maintenance.
     """
+
+    def to_representation(self, instance):
+        """
+        Add OData-specific representation logic and apply nested query options
+        to expanded related objects.
+        
+        This method intercepts the serialization process to apply OData query
+        options ($filter, $orderby, $top, $skip, $count) to expanded related
+        fields before they are serialized.
+        """
+        # Import here to avoid circular dependency
+        from .utils import apply_odata_query_params
+        
+        data = super().to_representation(instance)
+
+        # Apply OData query options to expanded fields
+        if hasattr(self, '_expanded_fields_data') and self._expanded_fields_data:
+            for field_name, expanded_data in self._expanded_fields_data.items():
+                if field_name not in data:
+                    continue
+                    
+                odata_params = expanded_data.get('odata_params', {})
+                
+                # Skip if no query options to apply
+                if not odata_params or not any(
+                    key in odata_params
+                    for key in ['$filter', '$orderby', '$top', '$skip', '$count']
+                ):
+                    continue
+                
+                try:
+                    # Get the related object(s)
+                    related_obj = getattr(instance, field_name, None)
+                    
+                    if related_obj is None:
+                        continue
+                    
+                    # Check if it's a queryset (many=True) or single object
+                    from django.db.models import QuerySet, Manager
+                    
+                    if isinstance(related_obj, (QuerySet, Manager)):
+                        # It's a collection - apply query options
+                        if isinstance(related_obj, Manager):
+                            related_queryset = related_obj.all()
+                        else:
+                            related_queryset = related_obj
+                        
+                        # Apply OData query parameters
+                        filtered_queryset = apply_odata_query_params(
+                            related_queryset,
+                            odata_params
+                        )
+                        
+                        # Get the serializer for this field
+                        field_serializer = self.fields.get(field_name)
+                        if field_serializer:
+                            # Re-serialize with filtered queryset
+                            # The field serializer already has the correct context with nested params
+                            data[field_name] = field_serializer.to_representation(filtered_queryset)
+                    
+                    # For single objects (many=False), query options don't apply
+                    # except for $select and $expand which are already handled
+                    
+                except Exception as e:
+                    logger.error(
+                        f"Error applying OData query options to expanded field '{field_name}': {e}"
+                    )
+                    # Keep the original data on error
+
+        return data
 
     def get_field_info(self) -> Dict[str, Dict[str, Any]]:
         """
