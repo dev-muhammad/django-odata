@@ -6,9 +6,13 @@ that don't require complex database setup.
 """
 
 import os
+import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Add project root to Python path so example can be imported
+sys.path.insert(0, BASE_DIR)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "test-secret-key-for-unit-tests-only"

@@ -1,14 +1,11 @@
-.PHONY: help venv venv-activate install install-dev test test-unit test-integration test-coverage clean lint format example-setup example-run example-clean docs
+.PHONY: help sync install install-dev test test-unit test-integration test-coverage clean lint format example-setup example-run example-clean docs
 
 # Default target
 help:
 	@echo "Django OData - Development Commands"
 	@echo ""
 	@echo "Environment Setup:"
-	@echo "  make venv             Create Python virtual environment"
-	@echo "  make venv-activate    Show command to activate venv"
-	@echo ""
-	@echo "Installation:"
+	@echo "  make sync             Sync dependencies with uv (creates venv automatically)"
 	@echo "  make install          Install package in production mode"
 	@echo "  make install-dev      Install package with development dependencies"
 	@echo ""
@@ -32,70 +29,61 @@ help:
 	@echo "  make docs             Build documentation"
 	@echo ""
 	@echo "Quick Start:"
-	@echo "  1. make venv          # Create virtual environment"
-	@echo "  2. source .venv/bin/activate  # Activate it"
-	@echo "  3. make dev-setup     # Install deps and setup example"
-	@echo "  4. make example-run   # Run the server"
+	@echo "  1. make sync          # Sync dependencies with uv"
+	@echo "  2. make dev-setup     # Install package and setup example"
+	@echo "  3. make example-run   # Run the server"
 
-# Virtual Environment
-venv:
-	@echo "Creating Python virtual environment..."
-	python3 -m venv .venv
+# Environment Setup with uv
+sync:
+	@echo "Syncing dependencies with uv..."
+	uv sync --group dev
 	@echo ""
-	@echo "✅ Virtual environment created!"
+	@echo "✅ Dependencies synced!"
 	@echo ""
 	@echo "Next steps:"
-	@echo "  1. source .venv/bin/activate"
-	@echo "  2. make dev-setup"
-
-venv-activate:
-	@echo "To activate the virtual environment, run:"
-	@echo "  source .venv/bin/activate"
-	@echo ""
-	@echo "To deactivate it later, run:"
-	@echo "  deactivate"
+	@echo "  make dev-setup    # Install package and setup example"
 
 # Installation
 install:
-	pip install -e .
+	uv pip install -e .
 
 install-dev:
-	pip install -e ".[dev]"
+	uv sync --group dev
+	uv pip install -e .
 
 # Testing
 test:
-	DJANGO_SETTINGS_MODULE=tests.settings pytest tests/ --ignore=tests/performance/ -v
-	DJANGO_SETTINGS_MODULE=tests.settings pytest tests/ --ignore=tests/performance/ -v
+	DJANGO_SETTINGS_MODULE=tests.settings uv run pytest tests/ --ignore=tests/performance/ -v
 
 test-unit:
-	DJANGO_SETTINGS_MODULE=tests.settings pytest tests/ --ignore=tests/performance/ --ignore=tests/integration/ -v
+	DJANGO_SETTINGS_MODULE=tests.settings uv run pytest tests/ --ignore=tests/performance/ --ignore=tests/integration/ -v
 
 test-integration:
-	DJANGO_SETTINGS_MODULE=tests.settings pytest tests/integration/ -v
+	DJANGO_SETTINGS_MODULE=tests.settings uv run pytest tests/integration/ -v
 
 test-coverage:
-	DJANGO_SETTINGS_MODULE=tests.settings pytest tests/ --ignore=tests/performance/ --cov=django_odata --cov-report=html --cov-report=term
+	DJANGO_SETTINGS_MODULE=tests.settings uv run pytest tests/ --ignore=tests/performance/ --cov=django_odata --cov-report=html --cov-report=term
 
 # Code Quality
 lint:
 	@echo "Running flake8..."
-	-flake8 django_odata tests
+	-uv run flake8 django_odata tests
 	@echo "Running mypy..."
-	-mypy django_odata
+	-uv run mypy django_odata
 
 format:
 	@echo "Running black..."
-	black django_odata tests
+	uv run black django_odata tests
 	@echo "Running isort..."
-	isort django_odata tests
+	uv run isort django_odata tests
 
 # Example Application
 example-setup:
 	@echo "Setting up example application..."
-	cd example && python manage.py migrate --run-syncdb
+	cd example && DJANGO_SETTINGS_MODULE=example.settings uv run python manage.py migrate --run-syncdb
 	@echo ""
 	@echo "Creating test user (test@test.com / test)..."
-	cd example && python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(email='test@test.com').exists() or User.objects.create_superuser('test', 'test@test.com', 'test')"
+	cd example && DJANGO_SETTINGS_MODULE=example.settings uv run python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(email='test@test.com').exists() or User.objects.create_superuser('test', 'test@test.com', 'test')"
 	@echo ""
 	@echo "Example application ready!"
 	@echo "  - Test user: test@test.com / test"
@@ -111,7 +99,7 @@ example-run:
 	@echo ""
 	@echo "Test credentials: test@test.com / test"
 	@echo ""
-	cd example && python manage.py runserver
+	cd example && DJANGO_SETTINGS_MODULE=example.settings uv run python manage.py runserver
 
 example-clean:
 	@echo "Cleaning example application database..."

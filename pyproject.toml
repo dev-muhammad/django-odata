@@ -42,6 +42,18 @@ dev = [
     "mypy>=0.900",
 ]
 
+[dependency-groups]
+dev = [
+    "black>=21.0",
+    "flake8>=3.8",
+    "isort>=5.0",
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+    "pytest-django>=4.0",
+    "pytest-benchmark>=3.4.0",
+    "mypy>=0.900",
+]
+
 [tool.isort]
 profile = "black"
 multi_line_output = 3
