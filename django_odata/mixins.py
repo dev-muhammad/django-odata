@@ -11,7 +11,6 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .native_fields import parse_expand_fields
 from .utils import (
     apply_odata_query_params,
     build_odata_metadata,
@@ -583,12 +582,14 @@ class ODataMixin:
         """
         queryset = self.filter_queryset(self.get_queryset())
 
-        # Handle $count parameter
+        # Handle $count parameter (only include count when explicitly requested)
         odata_params = self.get_odata_query_params()
         include_count = (
             "$count" in odata_params and odata_params["$count"].lower() == "true"
         )
 
+        # Calculate count if requested (BEFORE pagination to reflect total items)
+        total_count = None
         if include_count:
             total_count = queryset.count()
 
@@ -596,16 +597,46 @@ class ODataMixin:
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            response_data = self.get_paginated_response(serializer.data).data
 
+            # Get the paginated response from DRF
+            paginated_response = self.get_paginated_response(serializer.data)
+
+            # Transform DRF pagination format to OData format
+            # DRF format: {"count": X, "next": "...", "previous": "...", "results": [...]}
+            # OData format: {"@odata.context": "...", "@odata.count": X, "value": [...]}
+            response_data = {"value": serializer.data}
+
+            # Add count if requested
             if include_count:
                 response_data["@odata.count"] = total_count
 
+            # Add OData context for paginated responses
+            if hasattr(self, "get_serializer_class"):
+                serializer_class = self.get_serializer_class()
+                if hasattr(serializer_class, "Meta") and hasattr(
+                    serializer_class.Meta, "model"
+                ):
+                    model_name = serializer_class.Meta.model.__name__.lower()
+                    response_data["@odata.context"] = (
+                        f"{request.build_absolute_uri('/odata/')}$metadata#{model_name}s"
+                    )
+
+            # Optionally preserve DRF's next/previous links for client convenience
+            # (Not part of OData spec, but useful for backward compatibility)
+            if "next" in paginated_response.data:
+                response_data["@odata.nextLink"] = paginated_response.data["next"]
+            if "previous" in paginated_response.data:
+                response_data["@odata.previousLink"] = paginated_response.data[
+                    "previous"
+                ]
+
             return Response(response_data)
 
+        # Non-paginated response
         serializer = self.get_serializer(queryset, many=True)
         response_data = {"value": serializer.data}
 
+        # Add count if requested
         if include_count:
             response_data["@odata.count"] = total_count
 

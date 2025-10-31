@@ -263,12 +263,22 @@ See [Field Optimization Documentation](docs/field-optimization.md) for detailed 
 ### Counting
 
 ```bash
-# Get total count along with results
+# Get total count along with results (explicitly request count)
 GET /odata/posts/?$count=true
 
 # Get count of filtered results
 GET /odata/posts/?$filter=status eq 'published'&$count=true
+
+# Without $count=true, no count is included (default behavior for better performance)
+GET /odata/posts/
+# Response will NOT include @odata.count
+
+# Explicitly disable count (same as default)
+GET /odata/posts/?$count=false
+# Response will NOT include @odata.count
 ```
+
+**Note**: The `@odata.count` property is only included in responses when `$count=true` is explicitly specified in the query parameters. This default behavior optimizes performance by avoiding unnecessary COUNT(*) database queries unless explicitly requested.
 
 ### Metadata
 
@@ -349,7 +359,7 @@ query = (ODataQueryBuilder()
 | `$skip` | Skip number of results | `$skip=20` |
 | `$select` | Choose specific fields | `$select=id,title,status` |
 | `$expand` | Include related data | `$expand=author,categories` or `$expand=author($select=name,bio)` |
-| `$count` | Include total count | `$count=true` |
+| `$count` | Include total count (only when `$count=true`) | `$count=true` |
 
 ### Filter Operators
 
@@ -409,7 +419,6 @@ DJANGO_ODATA = {
 ```json
 {
   "@odata.context": "http://example.com/odata/$metadata#posts",
-  "@odata.count": 150,
   "value": [
     {
       "id": 1,
@@ -420,6 +429,22 @@ DJANGO_ODATA = {
         "name": "John Doe",
         "email": "john@example.com"
       }
+    }
+  ]
+}
+```
+
+**Note**: The `@odata.count` property is only included when `$count=true` is specified:
+
+```json
+{
+  "@odata.context": "http://example.com/odata/$metadata#posts",
+  "@odata.count": 150,
+  "value": [
+    {
+      "id": 1,
+      "title": "Introduction to Django",
+      "status": "published"
     }
   ]
 }
@@ -500,6 +525,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Field-Level Query Optimization (SPEC-003)**: Automatically fetches only requested fields from database using Django's `.only()` method. Reduces data transfer by 70-90% when using `$select` parameter. Works seamlessly with both `select_related` and `prefetch_related` optimizations.
 - **Removed `drf-flex-fields` Dependency**: Replaced `drf-flex-fields` with a native implementation for field selection (`$select`) and expansion (`$expand`). This change removes external dependencies for core functionality, improves performance, and simplifies the architecture. The API remains 100% backward compatible.
 - **Enhanced Query Optimization**: The native expansion logic now automatically applies `select_related` and `prefetch_related` to prevent N+1 query issues, making your API faster out-of-the-box.
+- **Count Parameter Behavior (SPEC-004)**: Clarified that `@odata.count` is only included in responses when `$count=true` is explicitly requested. This default behavior optimizes performance by avoiding unnecessary COUNT(*) queries unless needed.
 
 ### v0.1.0
 - Initial release providing full OData v4 query support, dynamic field selection and expansion via `drf-flex-fields`, and comprehensive test coverage.

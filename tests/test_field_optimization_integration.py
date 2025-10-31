@@ -104,7 +104,7 @@ class TestCompleteFieldOptimization(TestCase):
         viewset.request = request
         viewset.format_kwarg = None
 
-        with CaptureQueriesContext(connection) as queries:
+        with CaptureQueriesContext(connection):
             queryset = viewset.get_queryset()
             posts = list(queryset)
 

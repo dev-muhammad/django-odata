@@ -28,8 +28,7 @@ class AuthorSerializer(ODataModelSerializer):
         }
     
     def create(self, validated_data):
-        """Crea un Author assignant automàticament el request.user."""
-        # Obtenir el user del request
+        """Creates an Author"""
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             validated_data['user'] = request.user

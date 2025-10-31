@@ -5,8 +5,6 @@ Tests the parse_expand_fields_v2 function and related functionality for
 parsing complex $expand expressions with nested query options.
 """
 
-import pytest
-
 from django_odata.utils import (
     _parse_query_options,
     _parse_single_expand_field_v2,

@@ -5,7 +5,6 @@ This module tests the field selection optimization for prefetch_related queries,
 ensuring that only requested fields from related models are fetched.
 """
 
-import pytest
 from django.contrib.auth.models import User
 from django.db import connection
 from django.test import TestCase

@@ -4,7 +4,6 @@ Unit tests for native field selection and expansion.
 Tests the native implementations that replace drf-flex-fields functionality.
 """
 
-import pytest
 from rest_framework import serializers
 
 from django_odata.native_fields import (

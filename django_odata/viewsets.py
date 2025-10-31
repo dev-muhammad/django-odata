@@ -47,14 +47,20 @@ class ODataViewSet(ODataMixin, viewsets.ViewSet):
 
         # Wrap in OData collection format if needed
         if isinstance(response.data, list):
+            # Check if count should be included (only when explicitly requested)
+            odata_params = self.get_odata_query_params()
+            include_count = (
+                "$count" in odata_params and odata_params["$count"].lower() == "true"
+            )
+
+            # Build OData response
             odata_response = {
                 "@odata.context": self._get_collection_context_url(),
                 "value": response.data,
             }
 
             # Add count if requested
-            odata_params = self.get_odata_query_params()
-            if "$count" in odata_params and odata_params["$count"].lower() == "true":
+            if include_count:
                 odata_response["@odata.count"] = len(response.data)
 
             response.data = odata_response

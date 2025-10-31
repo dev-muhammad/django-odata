@@ -428,10 +428,9 @@ pytest -v
 # Check coverage
 pytest --cov=django_odata --cov-report=html
 
-# Run linting
-black django_odata/ tests/
-isort django_odata/ tests/
-flake8 django_odata/ tests/
+# Run linting and formatting
+ruff format django_odata/ tests/
+ruff check django_odata/ tests/
 
 # Type checking
 mypy django_odata/
@@ -440,9 +439,8 @@ mypy django_odata/
 **Quality Gates** (all must pass):
 - [ ] All tests pass (100% pass rate)
 - [ ] Coverage ≥90%
-- [ ] Black formatting passes
-- [ ] isort passes
-- [ ] flake8 passes
+- [ ] Ruff formatting passes
+- [ ] Ruff linting passes
 - [ ] mypy passes (no type errors)
 
 #### Step 5: Test with Example Project
@@ -498,7 +496,7 @@ git push origin NNN-feature-name
 **Review Checklist**:
 
 #### Code Quality
-- [ ] Follows project code style (black, isort)
+- [ ] Follows project code style (ruff)
 - [ ] Type hints on all public APIs
 - [ ] Clear, descriptive variable names
 - [ ] No unnecessary complexity
@@ -734,8 +732,8 @@ pytest --cov=django_odata --cov-report=html
 
 ```bash
 # Auto-fix formatting
-black django_odata/ tests/
-isort django_odata/ tests/
+ruff format django_odata/ tests/
+ruff check --fix django_odata/ tests/
 
 # Check remaining issues
 flake8 django_odata/ tests/
@@ -851,8 +849,7 @@ git commit -m "more changes"
 pytest --cov=django_odata
 
 # Format code
-black django_odata/ tests/
-isort django_odata/ tests/
+ruff format django_odata/ tests/
 
 # Lint
 flake8 django_odata/ tests/
@@ -874,9 +871,8 @@ mypy django_odata/
 
 - ✅ All tests pass (100%)
 - ✅ Coverage ≥90%
-- ✅ Black formatting
-- ✅ isort imports
-- ✅ flake8 linting
+- ✅ Ruff formatting
+- ✅ Ruff linting
 - ✅ mypy type checking
 - ✅ Documentation updated
 

@@ -228,18 +228,20 @@ class NativeFieldSelectionMixin:
         odata_params = self.context.get("odata_params", {})
         select_param = odata_params.get("$select")
 
-        if not select_param:
+        # If $select is explicitly set to an empty string, it means no fields.
+        # Otherwise, if $select is None, it means all fields.
+        if select_param is None:
             # No $select parameter, show all fields
             return
-
-        # Parse the $select parameter
-        parsed = parse_select_fields(select_param)
-        top_level_fields = parsed["top_level"]
-        nested_selections = parsed["nested"]
-
-        if not top_level_fields:
-            # Empty selection, show all fields
-            return
+        elif select_param == "":
+            # Explicitly empty $select, show no fields
+            top_level_fields = []
+            nested_selections = {}
+        else:
+            # Parse the $select parameter
+            parsed = parse_select_fields(select_param)
+            top_level_fields = parsed["top_level"]
+            nested_selections = parsed["nested"]
 
         # Also include fields from $expand to prevent them from being filtered out
         expand_param = odata_params.get("$expand")
@@ -361,7 +363,9 @@ class NativeFieldExpansionMixin:
             nested_context["_expansion_depth"] = depth + 1
 
             # Populate nested_odata_params with all relevant OData query options
-            nested_odata_params = nested_context.get("odata_params", {}).copy()
+            # IMPORTANT: Don't inherit $select from parent unless explicitly specified
+            # in the expansion options (e.g., $expand=author($select=name))
+            nested_odata_params = {}
             for odata_param in [
                 "$filter",
                 "$orderby",

@@ -25,7 +25,7 @@ Provide enterprise-grade OData functionality for Django applications while maint
 
 ### Development Tools
 - **Testing**: pytest, pytest-cov, pytest-django
-- **Code Quality**: black, isort, flake8, mypy
+- **Code Quality**: ruff, mypy
 - **Build**: setuptools, wheel, twine
 - **Documentation**: Markdown
 
@@ -101,11 +101,14 @@ make test-coverage     # Run with coverage
 
 ### Code Quality
 ```bash
-# Format code
-uv run black django_odata/ tests/
+# Format code with ruff
+uv run ruff format django_odata/ tests/
 
-# Sort imports
-uv run isort django_odata/ tests/
+# Lint code with ruff
+uv run ruff check django_odata/ tests/
+
+# Auto-fix issues with ruff
+uv run ruff check --fix django_odata/ tests/
 
 # Lint code
 uv run flake8 django_odata/ tests/
@@ -114,8 +117,8 @@ uv run flake8 django_odata/ tests/
 uv run mypy django_odata/
 
 # Or use Makefile shortcuts
-make format    # Format code with black and isort
-make lint      # Run linters
+make format    # Format code with ruff
+make lint      # Run linters with ruff
 ```
 
 ### Example Project
@@ -149,9 +152,8 @@ twine upload dist/*
 ## Code Style Guidelines
 
 ### Python Style
-- **Formatter**: Black (line length: 88)
-- **Import Order**: isort with black profile
-- **Linting**: flake8 with max-line-length=88
+- **Formatter**: Ruff (line length: 88)
+- **Linting**: Ruff with flake8-compatible rules
 - **Type Hints**: Required for all public APIs
 - **Docstrings**: Google style for all public classes/functions
 
@@ -263,6 +265,95 @@ This project follows the principles defined in [`.specify/memory/constitution.md
 3. ⏳ prefetch_related Optimization - Field selection with Prefetch objects
 4. ⏳ Testing & Validation - Comprehensive testing and benchmarking
 5. ⏳ Documentation - Update docs with performance notes
+
+### SPEC-004: Always Include Count in OData Responses
+**Status**: ✅ Ready for Implementation
+**Branch**: Not yet created
+**Priority**: Medium
+**Complexity**: Low
+**Timeline**: 1.5 days development
+
+**Objective**: Modify OData response format to always include `@odata.count` in collection responses without requiring `$count=true` in the URL parameter. This improves API usability by providing count information by default while maintaining OData v4.0 compliance.
+
+**Current Behavior**:
+```json
+// Request: GET /odata/posts/
+{
+  "@odata.context": "...",
+  "value": [...]
+}
+
+// Request: GET /odata/posts/?$count=true
+{
+  "@odata.context": "...",
+  "@odata.count": 42,
+  "value": [...]
+}
+```
+
+**Desired Behavior**:
+```json
+// Request: GET /odata/posts/
+{
+  "@odata.context": "...",
+  "@odata.count": 42,
+  "value": [...]
+}
+
+// Request: GET /odata/posts/?$count=true (backward compatible)
+{
+  "@odata.context": "...",
+  "@odata.count": 42,
+  "value": [...]
+}
+```
+
+**OData v4.0 Compliance**:
+According to OData v4.0 specification section 11.2.5.5, the `@odata.count` annotation:
+- MUST be included when `$count=true` is specified
+- MAY be included in responses even when not explicitly requested
+- Represents the total count of items matching the request, ignoring `$top` and `$skip`
+
+**Implementation Requirements**:
+1. **Always Calculate Count**: Modify `ODataMixin.list()` in `django_odata/mixins.py` to always compute total count for collection responses
+2. **Include in Response**: Always add `@odata.count` to response data structure
+3. **Pagination Compatibility**: Ensure count reflects total items, not just current page
+4. **Performance Consideration**: Count query executes before pagination, must be optimized
+5. **Backward Compatibility**: Support explicit `$count=true` parameter (no-op, count already included)
+
+**Files to Modify**:
+- `django_odata/mixins.py`: Update `ODataMixin.list()` method (lines 579-622)
+- `django_odata/viewsets.py`: Update `ODataViewSet.list()` method (lines 41-62)
+- `tests/test_mixins.py`: Add tests for default count inclusion
+- `tests/test_viewsets.py`: Add tests for viewset count behavior
+- `tests/integration/test_odata_integration.py`: Add integration tests
+- `README.md`: Update documentation with count behavior
+- `docs/migration_guide.md`: Document behavior change
+
+**Expected Impact**:
+- **Performance**: Minimal impact - one additional `COUNT(*)` query per collection request
+- **API Usability**: Improved - clients always know total count without additional parameter
+- **Breaking Changes**: None - this is an additive change that enhances responses
+- **Standards Compliance**: Maintains OData v4.0 compliance (count is optional, not forbidden)
+
+**Testing Requirements**:
+1. Unit tests for count inclusion in all collection responses
+2. Integration tests with pagination ($top, $skip) to verify count reflects total
+3. Integration tests with filtering ($filter) to verify count reflects filtered total
+4. Performance benchmarks to measure count query impact
+5. Backward compatibility tests with explicit `$count=true` parameter
+
+**Performance Optimization Notes**:
+- Use `queryset.count()` which generates optimized `SELECT COUNT(*)`
+- Count executes on filtered queryset (after `$filter` applied)
+- Count executes before pagination (reflects total, not page size)
+- Consider caching strategies for frequently accessed collections (future enhancement)
+
+**Phases**:
+1. ⏳ Update Core Logic - Modify ODataMixin.list() and ODataViewSet.list()
+2. ⏳ Update Tests - Add comprehensive test coverage
+3. ⏳ Documentation - Update README and migration guide
+4. ⏳ Testing & Validation - Run full test suite and performance benchmarks
 
 ## Contact & Resources
 

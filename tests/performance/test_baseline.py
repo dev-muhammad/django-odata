@@ -8,7 +8,6 @@ Run with: pytest tests/performance/test_baseline.py -v --benchmark-only
 """
 
 import pytest
-from django.test import RequestFactory
 from rest_framework.test import APIRequestFactory
 
 # Import test models and serializers
@@ -75,8 +74,6 @@ class TestFieldSelectionPerformance:
         """Measure performance of selecting a single field."""
         from django.urls import resolve
 
-        from example.example.urls import urlpatterns
-
         def run_query():
             request = api_factory.get("/posts/", {"$select": "id"})
             view = resolve("/api/posts/").func
@@ -90,8 +87,6 @@ class TestFieldSelectionPerformance:
         """Measure performance of selecting multiple fields."""
         from django.urls import resolve
 
-        from example.example.urls import urlpatterns
-
         def run_query():
             request = api_factory.get("/posts/", {"$select": "id,title,status"})
             view = resolve("/api/posts/").func
@@ -104,8 +99,6 @@ class TestFieldSelectionPerformance:
     def test_select_all_fields(self, benchmark, api_factory, sample_data):
         """Measure performance with no $select (all fields)."""
         from django.urls import resolve
-
-        from example.example.urls import urlpatterns
 
         def run_query():
             request = api_factory.get("/posts/")
@@ -125,8 +118,6 @@ class TestFieldExpansionPerformance:
         """Measure performance of expanding a single relation."""
         from django.urls import resolve
 
-        from example.example.urls import urlpatterns
-
         def run_query():
             request = api_factory.get("/posts/", {"$expand": "author"})
             view = resolve("/api/posts/").func
@@ -140,8 +131,6 @@ class TestFieldExpansionPerformance:
         """Measure performance of expanding multiple relations."""
         from django.urls import resolve
 
-        from example.example.urls import urlpatterns
-
         def run_query():
             request = api_factory.get("/posts/", {"$expand": "author,categories"})
             view = resolve("/api/posts/").func
@@ -154,8 +143,6 @@ class TestFieldExpansionPerformance:
     def test_expand_with_nested_select(self, benchmark, api_factory, sample_data):
         """Measure performance of expansion with nested field selection."""
         from django.urls import resolve
-
-        from example.example.urls import urlpatterns
 
         def run_query():
             request = api_factory.get(
@@ -177,8 +164,6 @@ class TestCombinedQueryPerformance:
         """Measure performance of combined select and expand."""
         from django.urls import resolve
 
-        from example.example.urls import urlpatterns
-
         def run_query():
             request = api_factory.get(
                 "/posts/", {"$select": "id,title,status", "$expand": "author"}
@@ -193,8 +178,6 @@ class TestCombinedQueryPerformance:
     def test_complex_query(self, benchmark, api_factory, sample_data):
         """Measure performance of complex query with multiple operations."""
         from django.urls import resolve
-
-        from example.example.urls import urlpatterns
 
         def run_query():
             request = api_factory.get(

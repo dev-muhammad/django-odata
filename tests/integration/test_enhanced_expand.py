@@ -7,8 +7,7 @@ and ODataModelSerializer to ensure nested query options work end-to-end.
 
 import pytest
 from django.contrib.auth.models import User
-from django.test import RequestFactory, TestCase
-from rest_framework import serializers
+from django.test import TestCase
 from rest_framework.test import APIRequestFactory
 
 from django_odata.serializers import ODataModelSerializer

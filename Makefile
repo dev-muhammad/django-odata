@@ -16,13 +16,14 @@ help:
 	@echo "  make test-coverage    Run tests with coverage report"
 	@echo ""
 	@echo "Code Quality:"
-	@echo "  make lint             Run code linters (flake8, mypy)"
-	@echo "  make format           Format code with black and isort"
+	@echo "  make lint             Run code linters (ruff, mypy)"
+	@echo "  make format           Format code with ruff"
 	@echo ""
 	@echo "Example Application:"
 	@echo "  make example-setup    Set up example application database"
 	@echo "  make example-run      Run example application server"
 	@echo "  make example-clean    Clean example application database"
+	@echo "  make seed-data        Seed example application with fake data"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean            Remove build artifacts and cache files"
@@ -53,10 +54,10 @@ install-dev:
 
 # Testing
 test:
-	DJANGO_SETTINGS_MODULE=tests.settings uv run pytest tests/ --ignore=tests/performance/ -v
+	PYTHONPATH=. DJANGO_SETTINGS_MODULE=tests.settings uv run pytest tests/ --ignore=tests/performance/ -v --no-migrations
 
 test-unit:
-	DJANGO_SETTINGS_MODULE=tests.settings uv run pytest tests/ --ignore=tests/performance/ --ignore=tests/integration/ -v
+	DJANGO_SETTINGS_MODULE=tests.settings uv run pytest tests/ --ignore=tests-performance/ --ignore=tests/integration/ -v
 
 test-integration:
 	DJANGO_SETTINGS_MODULE=tests.settings uv run pytest tests/integration/ -v
@@ -66,16 +67,15 @@ test-coverage:
 
 # Code Quality
 lint:
-	@echo "Running flake8..."
-	-uv run flake8 django_odata tests
+	@echo "Running ruff..."
+	-uv run ruff check django_odata tests
 	@echo "Running mypy..."
 	-uv run mypy django_odata
 
 format:
-	@echo "Running black..."
-	uv run black django_odata tests
-	@echo "Running isort..."
-	uv run isort django_odata tests
+	@echo "Running ruff..."
+	uv run ruff check --fix --unsafe-fixes django_odata tests
+	uv run ruff format django_odata tests
 
 # Example Application
 example-setup:
@@ -99,12 +99,16 @@ example-run:
 	@echo ""
 	@echo "Test credentials: test@test.com / test"
 	@echo ""
-	cd example && DJANGO_SETTINGS_MODULE=example.settings uv run python manage.py runserver
+	PYTHONPATH=. DJANGO_SETTINGS_MODULE=example.example.settings uv run python example/manage.py runserver
 
 example-clean:
 	@echo "Cleaning example application database..."
 	rm -f example/db.sqlite3
 	@echo "Database removed. Run 'make example-setup' to recreate."
+
+seed-data:
+	@echo "Seeding example application with fake data..."
+	DJANGO_SETTINGS_MODULE=example.example.settings uv run python example/manage.py seed_data
 
 # Maintenance
 clean:

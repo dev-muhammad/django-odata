@@ -5,7 +5,6 @@ This module tests the field selection optimization that uses Django's .only()
 method to fetch only requested fields from the database.
 """
 
-import pytest
 from django.contrib.auth.models import User
 from django.db import connection
 from django.test import TestCase
@@ -13,7 +12,6 @@ from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIRequestFactory
 
 from example.blog.models import Author, BlogPost, Category
-from example.blog.serializers import BlogPostSerializer
 from example.blog.views import BlogPostViewSet
 
 

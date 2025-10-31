@@ -5,14 +5,13 @@ This module tests the field selection optimization for select_related queries,
 ensuring that only requested fields from related models are fetched.
 """
 
-import pytest
 from django.contrib.auth.models import User
 from django.db import connection
 from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIRequestFactory
 
-from example.blog.models import Author, BlogPost, Category
+from example.blog.models import Author, BlogPost
 from example.blog.views import BlogPostViewSet
 
 
@@ -84,7 +83,7 @@ class TestSelectRelatedFieldOptimization(TestCase):
     def test_select_related_multiple_relations(self):
         """Test field selection with multiple select_related relations."""
         # Create another post with same author
-        post2 = BlogPost.objects.create(
+        BlogPost.objects.create(
             title="Test Post 2",
             slug="test-post-2",
             content="Content 2",

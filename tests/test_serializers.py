@@ -136,7 +136,6 @@ class TestODataSerializer(TestCase):
     def test_odata_context_generation(self):
         """Test OData context generation."""
         # Create a mock request with all necessary attributes
-        from django.http import QueryDict
 
         class MockRequest:
             def __init__(self):
@@ -209,7 +208,6 @@ class RelatedModelSerializer(ODataModelSerializer):
 # TestODataNestedExpand removed - these tests were specific to drf-flex-fields
 # parameter conversion which is no longer used. The native implementation is
 # tested in test_native_fields.py
-
 
 if __name__ == "__main__":
     pytest.main([__file__])

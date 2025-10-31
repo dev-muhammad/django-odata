@@ -2,8 +2,6 @@
 Test models for django-odata test suite.
 """
 
-from decimal import Decimal
-
 from django.db import models
 
 
