@@ -8,10 +8,11 @@ from .serializers import (
     BlogPostSerializer,
     AuthorSerializer,
     CategorySerializer,
+)
+from .manual_serializers import (
     CommentSerializer,
     TagSerializer,
 )
-
 
 class BlogPostViewSet(ODataModelViewSet):
     """
@@ -29,6 +30,7 @@ class BlogPostViewSet(ODataModelViewSet):
     - /odata/posts/?$filter=status eq 'published'
     - /odata/posts/?$orderby=created_at desc&$top=10
     - /odata/posts/?$expand=author,categories&$select=title,content,author,categories
+    - /odata/posts/?$expand=author($expand=user),categories&$select=title,content,author,categories
     - /odata/posts/?$filter=view_count gt 100&$orderby=rating desc
     """
 
