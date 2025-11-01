@@ -167,27 +167,44 @@ class TestODataResponseFormatting(APITestCase):
 
     def test_list_response_format(self):
         """Test that list responses are formatted correctly."""
+        # Create test data
+        ViewSetTestModel.objects.create(name="Test Item", value=42, is_active=True)
+
         request = self.factory.get("/test/")
         viewset = self.viewset_class()
         viewset.request = request
         viewset.format_kwarg = None
 
-        # Mock the queryset and pagination
-        viewset.paginate_queryset = lambda qs: None
+        # Mock pagination to return all items
+        viewset.paginate_queryset = lambda qs: list(qs)
         viewset.filter_queryset = lambda qs: qs
 
-        # Test would require actual database setup to complete
-        # For now, we test the structure
-        self.assertTrue(hasattr(viewset, "list"))
+        # Test the list method
+        response = viewset.list(request)
+        self.assertIsInstance(response.data, dict)
+        self.assertIn("@odata.context", response.data)
+        self.assertIn("value", response.data)
+        self.assertEqual(len(response.data["value"]), 1)
+        self.assertEqual(response.data["value"][0]["name"], "Test Item")
 
     def test_retrieve_response_format(self):
         """Test that retrieve responses are formatted correctly."""
-        request = self.factory.get("/test/1/")
+        # Create test data
+        test_obj = ViewSetTestModel.objects.create(
+            name="Test Item", value=42, is_active=True
+        )
+
+        request = self.factory.get(f"/test/{test_obj.pk}/")
         viewset = self.viewset_class()
         viewset.request = request
+        viewset.kwargs = {"pk": str(test_obj.pk)}
 
-        # Test would require actual database setup to complete
-        self.assertTrue(hasattr(viewset, "retrieve"))
+        # Test the retrieve method
+        response = viewset.retrieve(request, pk=test_obj.pk)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("@odata.context", response.data)
+        self.assertEqual(response.data["name"], "Test Item")
+        self.assertEqual(response.data["value"], 42)
 
 
 class TestODataMetadataEndpoint(TestCase):

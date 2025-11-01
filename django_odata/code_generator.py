@@ -30,24 +30,30 @@ def generate_imports(model_class, app_label: str) -> str:
 
     # Import model using Django's lazy loading
     if model_app_label == app_label:
-        imports.append(f"from django.apps import apps")
-        imports.append(f"{model_name} = apps.get_model('{model_app_label}', '{model_name}')")
+        imports.append("from django.apps import apps")
+        imports.append(
+            f"{model_name} = apps.get_model('{model_app_label}', '{model_name}')"
+        )
     else:
-        imports.append(f"from django.apps import apps")
-        imports.append(f"{model_name} = apps.get_model('{model_app_label}', '{model_name}')")
+        imports.append("from django.apps import apps")
+        imports.append(
+            f"{model_name} = apps.get_model('{model_app_label}', '{model_name}')"
+        )
 
     return "\n".join(imports)
 
 
-def generate_regeneration_command(app_label: str, model_name: str, single: bool = False) -> str:
+def generate_regeneration_command(
+    app_label: str, model_name: str, single: bool = False
+) -> str:
     """
     Generate appropriate regeneration command based on context.
-    
+
     Args:
         app_label: App label for the model
         model_name: Model name
         single: Whether the file was generated with --single option
-        
+
     Returns:
         String containing the regeneration command
     """

@@ -190,7 +190,7 @@ class Command(BaseCommand):
             output_dir,
             single=options.get("single", False),
             force=options.get("force", False),
-            requested_options=options
+            requested_options=options,
         )
 
         self.stdout.write(
@@ -219,7 +219,12 @@ class Command(BaseCommand):
             raise CommandError(f"Model '{model_path}' not found")
 
     def _write_serializer_files(
-        self, serializer_codes: Dict[str, str], output_dir: Path, single: bool, force: bool, requested_options=None
+        self,
+        serializer_codes: Dict[str, str],
+        output_dir: Path,
+        single: bool,
+        force: bool,
+        requested_options=None,
     ):
         """Write serializer code to files.
 
@@ -282,13 +287,17 @@ class Command(BaseCommand):
         if single:
             # For single mode, pass the actual filename used (without .py extension)
             actual_filename = file_name[:-3]  # Remove .py extension
-            self._generate_init_file(output_dir, serializer_codes.keys(), single, actual_filename)
+            self._generate_init_file(
+                output_dir, serializer_codes.keys(), single, actual_filename
+            )
         else:
             self._generate_init_file(output_dir, serializer_codes.keys(), single, None)
 
-    def _write_file_with_overwrite_check(self, output_file: Path, content: str, force: bool):
+    def _write_file_with_overwrite_check(
+        self, output_file: Path, content: str, force: bool
+    ):
         """Write file with overwrite check unless force is True.
-        
+
         Args:
             output_file: Path to the output file
             content: Content to write
@@ -296,14 +305,16 @@ class Command(BaseCommand):
         """
         if output_file.exists() and not force:
             response = input(f"File {output_file} already exists. Overwrite? [y/N]: ")
-            if response.lower() not in ('y', 'yes'):
+            if response.lower() not in ("y", "yes"):
                 self.stdout.write(self.style.WARNING(f"  Skipped {output_file}"))
                 return
-        
+
         output_file.write_text(content)
         self.stdout.write(self.style.SUCCESS(f"  Written to {output_file}"))
 
-    def _generate_init_file(self, output_dir: Path, model_paths, single: bool, primary_model_name=None):
+    def _generate_init_file(
+        self, output_dir: Path, model_paths, single: bool, primary_model_name=None
+    ):
         """Generate __init__.py with imports.
 
         Args:
@@ -316,7 +327,9 @@ class Command(BaseCommand):
 
         if single:
             # Import all serializers from the primary model file
-            primary_file_name = primary_model_name if primary_model_name else "blog_post"
+            primary_file_name = (
+                primary_model_name if primary_model_name else "blog_post"
+            )
             for model_path in model_paths:
                 model_name = model_path.split(".")[-1]
                 serializer_name = f"{model_name}Serializer"
@@ -347,22 +360,22 @@ class Command(BaseCommand):
 
     def _discover_related_models(self, initial_models: list) -> list:
         """Discover all related models needed for expandable_fields when using --single.
-        
+
         Args:
             initial_models: List of initially requested models
-            
+
         Returns:
             List of models including all related models for expandable_fields
         """
         discovered_models = set(initial_models)
         models_to_process = list(initial_models)
-        
+
         while models_to_process:
             current_model = models_to_process.pop(0)
-            
+
             # Get model info to find relationships
             model_info = get_all_model_info(current_model)
-            
+
             for relationship in model_info["relationships"]:
                 # Parse the related model path
                 try:
@@ -374,11 +387,15 @@ class Command(BaseCommand):
                     # To get the model, we need the app_label (e.g., 'blog'), not the full app name (e.g., 'example.blog')
                     # Try with the full name first, then fall back to just the last part
                     try:
-                        related_model = apps.get_model(related_app_name, related_model_name)
+                        related_model = apps.get_model(
+                            related_app_name, related_model_name
+                        )
                     except LookupError:
                         # If that fails, try with just the app_label (last part of the app name)
                         related_app_label = parts[-2] if len(parts) > 1 else parts[0]
-                        related_model = apps.get_model(related_app_label, related_model_name)
+                        related_model = apps.get_model(
+                            related_app_label, related_model_name
+                        )
 
                     # If this is a new model, add it to be processed
                     if related_model not in discovered_models:
@@ -393,16 +410,18 @@ class Command(BaseCommand):
                         )
                     )
                     continue
-        
+
         self.stdout.write(
             self.style.SUCCESS(
                 f"Discovered {len(discovered_models) - len(initial_models)} additional related model(s) for --single mode"
             )
         )
-        
+
         return list(discovered_models)
 
-    def _combine_serializers(self, serializer_codes: Dict[str, str], primary_app: str) -> str:
+    def _combine_serializers(
+        self, serializer_codes: Dict[str, str], primary_app: str
+    ) -> str:
         """Combine multiple serializer codes into one file with deduplicated imports.
 
         Args:
@@ -418,16 +437,16 @@ class Command(BaseCommand):
         model_info = {}
 
         for model_path in serializer_codes.keys():
-            app_label, model_name = model_path.split('.')
-            model_info[model_path] = {'app_label': app_label, 'model_name': model_name}
+            app_label, model_name = model_path.split(".")
+            model_info[model_path] = {"app_label": app_label, "model_name": model_name}
 
         # Generate imports based on each model's actual app
         imports.add("from django_odata.serializers import ODataModelSerializer")
 
         # Import ALL models that have serializers being generated
         for model_path, info in model_info.items():
-            model_app = info['app_label']
-            model_name = info['model_name']
+            model_app = info["app_label"]
+            model_name = info["model_name"]
 
             if model_app == primary_app:
                 # Use relative imports for same app
@@ -436,19 +455,19 @@ class Command(BaseCommand):
                 # Use absolute imports for different apps
                 # Map Django built-in apps to their full module paths
                 app_module_map = {
-                    'auth': 'django.contrib.auth',
-                    'contenttypes': 'django.contrib.contenttypes',
-                    'sessions': 'django.contrib.sessions',
-                    'messages': 'django.contrib.messages',
-                    'admin': 'django.contrib.admin',
-                    'sites': 'django.contrib.sites',
+                    "auth": "django.contrib.auth",
+                    "contenttypes": "django.contrib.contenttypes",
+                    "sessions": "django.contrib.sessions",
+                    "messages": "django.contrib.messages",
+                    "admin": "django.contrib.admin",
+                    "sites": "django.contrib.sites",
                 }
                 full_app_path = app_module_map.get(model_app, model_app)
                 imports.add(f"from {full_app_path}.models import {model_name}")
 
         # Extract class definitions from each serializer
         for model_path, code in serializer_codes.items():
-            lines = code.split('\n')
+            lines = code.split("\n")
 
             # Skip the docstring (lines starting with """ until closing """)
             in_docstring = False
@@ -475,21 +494,22 @@ class Command(BaseCommand):
             for line in lines[code_start:]:
                 line = line.rstrip()
                 # Skip import lines since we're generating our own
-                if line.startswith('from ') or line.startswith('import '):
+                if line.startswith("from ") or line.startswith("import "):
                     continue
-                elif line.startswith('class ') or current_class:
+                elif line.startswith("class ") or current_class:
                     current_class.append(line)
-                elif line.strip() == '' and current_class:
+                elif line.strip() == "" and current_class:
                     # End of class definition
-                    class_definitions.append('\n'.join(current_class))
+                    class_definitions.append("\n".join(current_class))
                     current_class = []
 
             # Add the last class if it exists
             if current_class:
-                class_definitions.append('\n'.join(current_class))
+                class_definitions.append("\n".join(current_class))
 
         # Generate combined file header
         from datetime import datetime
+
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         header = f'''"""
@@ -508,6 +528,11 @@ Available options:
 
         # Combine everything
         sorted_imports = sorted(imports)
-        combined = header + '\n'.join(sorted_imports) + '\n\n\n' + '\n\n\n'.join(class_definitions)
+        combined = (
+            header
+            + "\n".join(sorted_imports)
+            + "\n\n\n"
+            + "\n\n\n".join(class_definitions)
+        )
 
         return combined

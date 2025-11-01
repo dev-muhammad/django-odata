@@ -121,9 +121,7 @@ def get_model_relationships(model_class) -> List[RelationshipInfo]:
         if isinstance(field, models.ForeignKey):
             # Get full app name from AppConfig
             app_config = apps.get_app_config(field.related_model._meta.app_label)
-            related_model = (
-                f"{app_config.name}.{field.related_model.__name__}"
-            )
+            related_model = f"{app_config.name}.{field.related_model.__name__}"
             rel_info = RelationshipInfo(
                 name=field.name,
                 related_model=related_model,
@@ -136,9 +134,7 @@ def get_model_relationships(model_class) -> List[RelationshipInfo]:
         elif isinstance(field, models.OneToOneField):
             # Get full app name from AppConfig
             app_config = apps.get_app_config(field.related_model._meta.app_label)
-            related_model = (
-                f"{app_config.name}.{field.related_model.__name__}"
-            )
+            related_model = f"{app_config.name}.{field.related_model.__name__}"
             rel_info = RelationshipInfo(
                 name=field.name,
                 related_model=related_model,
@@ -151,9 +147,7 @@ def get_model_relationships(model_class) -> List[RelationshipInfo]:
         elif isinstance(field, models.ManyToManyField):
             # Get full app name from AppConfig
             app_config = apps.get_app_config(field.related_model._meta.app_label)
-            related_model = (
-                f"{app_config.name}.{field.related_model.__name__}"
-            )
+            related_model = f"{app_config.name}.{field.related_model.__name__}"
             rel_info = RelationshipInfo(
                 name=field.name,
                 related_model=related_model,

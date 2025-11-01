@@ -2,6 +2,7 @@
 OData-compatible ViewSets that extend Django REST Framework functionality.
 """
 
+from django.urls import reverse
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -195,7 +196,11 @@ class ODataModelViewSet(ODataMixin, viewsets.ModelViewSet):
                     links = {
                         "value": [
                             {
-                                "url": f"{request.build_absolute_uri().split('$')[0]}{obj.pk}"
+                                "url": reverse(
+                                    f"{self.basename}-detail",
+                                    kwargs={"pk": obj.pk},
+                                    request=request,
+                                )
                             }
                             for obj in related_obj.all()
                         ]
@@ -204,7 +209,11 @@ class ODataModelViewSet(ODataMixin, viewsets.ModelViewSet):
                     links = {
                         "value": [
                             {
-                                "url": f"{request.build_absolute_uri().split('$')[0]}{related_obj.pk}"
+                                "url": reverse(
+                                    f"{self.basename}-detail",
+                                    kwargs={"pk": related_obj.pk},
+                                    request=request,
+                                )
                             }
                         ]
                     }
@@ -221,6 +230,26 @@ class ODataModelViewSet(ODataMixin, viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+        except (AttributeError, KeyError) as e:
+            return Response(
+                {
+                    "error": {
+                        "code": "BadRequest",
+                        "message": f"Invalid navigation property access: {str(e)}",
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except (AttributeError, KeyError) as e:
+            return Response(
+                {
+                    "error": {
+                        "code": "BadRequest",
+                        "message": f"Invalid navigation property access: {str(e)}",
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         except Exception as e:
             return Response(
                 {"error": {"code": "InternalError", "message": str(e)}},

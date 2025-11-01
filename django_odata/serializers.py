@@ -173,13 +173,28 @@ class ODataModelSerializer(
             serializers.DurationField: "Edm.Duration",
             serializers.FileField: "Edm.String",
             serializers.ImageField: "Edm.String",
-            serializers.JSONField: "Edm.String",
-            serializers.DictField: "Edm.String",
-            serializers.ListField: "Collection(Edm.String)",
+            serializers.JSONField: "Edm.Json",
+            serializers.DictField: "Edm.Json",
+            serializers.ListField: self._get_collection_type(field),
         }
 
         field_type = type(field)
         return field_type_mapping.get(field_type, "Edm.String")
+
+    def _get_collection_type(self, field) -> str:
+        """
+        Get the OData collection type for ListField based on child field type.
+
+        Args:
+            field: ListField instance
+
+        Returns:
+            OData collection type string
+        """
+        if hasattr(field, "child"):
+            child_type = self._get_odata_type(field.child)
+            return f"Collection({child_type})"
+        return "Collection(Edm.String)"
 
     def get_navigation_properties(self) -> Dict[str, Dict[str, Any]]:
         """

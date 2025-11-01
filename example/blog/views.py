@@ -27,11 +27,11 @@ class BlogPostViewSet(ODataModelViewSet):
     - $count: Get total count
 
     Example queries:
-    - /odata/posts/?$filter=status eq 'published'
-    - /odata/posts/?$orderby=created_at desc&$top=10
-    - /odata/posts/?$expand=author,categories&$select=title,content,author,categories
-    - /odata/posts/?$expand=author($expand=user),categories&$select=title,content,author,categories
-    - /odata/posts/?$filter=view_count gt 100&$orderby=rating desc
+    - /api/v1/odata/posts/?$filter=status eq 'published'
+    - /api/v1/odata/posts/?$orderby=created_at desc&$top=10
+    - /api/v1/odata/posts/?$expand=author,categories&$select=title,content,author,categories
+    - /api/v1/odata/posts/?$expand=author($expand=user),categories&$select=title,content,author,categories
+    - /api/v1/odata/posts/?$filter=view_count gt 100&$orderby=rating desc
     """
 
     queryset = BlogPost.objects.all()
@@ -44,9 +44,9 @@ class AuthorViewSet(ODataModelViewSet):
     OData ViewSet for Author model.
 
     Example queries:
-    - /odata/authors/?$expand=posts
-    - /odata/authors/?$filter=contains(bio,'python')
-    - /odata/authors/?$orderby=created_at desc
+    - /api/v1/odata/authors/?$expand=posts
+    - /api/v1/odata/authors/?$filter=contains(bio,'python')
+    - /api/v1/odata/authors/?$orderby=created_at desc
     """
 
     queryset = Author.objects.all()
@@ -58,9 +58,9 @@ class CategoryViewSet(ODataModelViewSet):
     OData ViewSet for Category model.
 
     Example queries:
-    - /odata/categories/?$expand=posts
-    - /odata/categories/?$filter=startswith(name,'Tech')
-    - /odata/categories/?$orderby=name asc
+    - /api/v1/odata/categories/?$expand=posts
+    - /api/v1/odata/categories/?$filter=startswith(name,'Tech')
+    - /api/v1/odata/categories/?$orderby=name asc
     """
 
     queryset = Category.objects.all()
@@ -72,8 +72,8 @@ class CommentViewSet(ODataModelViewSet):
     OData ViewSet for Comment model.
 
     Example queries:
-    - /odata/comments/?$filter=is_approved eq true
-    - /odata/comments/?$expand=post&$orderby=created_at desc
+    - /api/v1/odata/comments/?$filter=is_approved eq true
+    - /api/v1/odata/comments/?$expand=post&$orderby=created_at desc
     """
 
     queryset = Comment.objects.all()
@@ -85,8 +85,8 @@ class TagViewSet(ODataModelViewSet):
     OData ViewSet for Tag model.
 
     Example queries:
-    - /odata/tags/?$expand=posts
-    - /odata/tags/?$filter=color eq '#ff0000'
+    - /api/v1/odata/tags/?$expand=posts
+    - /api/v1/odata/tags/?$filter=color eq '#ff0000'
     """
 
     queryset = Tag.objects.all()

@@ -214,16 +214,22 @@ def _parse_single_query_option(option: str) -> tuple[str, str]:
     return key, value
 
 
-def parse_odata_query(query_params: Union[QueryDict, Dict[str, Any]]) -> Dict[str, Any]:
+def parse_odata_query(
+    query_params: Union[QueryDict, Dict[str, Any], str],
+) -> Dict[str, Any]:
     """
-    Parse OData query parameters from request.
+    Parse OData query parameters from request or query string.
 
     Args:
-        query_params: Django QueryDict or dictionary containing query parameters
+        query_params: Django QueryDict, dictionary containing query parameters, or raw query string
 
     Returns:
         Dictionary containing parsed OData query options
     """
+    # Handle raw query string
+    if isinstance(query_params, str):
+        return _parse_odata_query_string(query_params)
+
     odata_params = {}
 
     # Standard OData query options
@@ -250,6 +256,31 @@ def parse_odata_query(query_params: Union[QueryDict, Dict[str, Any]]) -> Dict[st
             odata_params[param] = query_params[param]
 
     return odata_params
+
+
+def _parse_odata_query_string(query_string: str) -> Dict[str, Any]:
+    """
+    Parse OData query string into parameters dictionary.
+
+    Args:
+        query_string: Raw query string like "$filter=status eq 'published'&$expand=author"
+
+    Returns:
+        Dictionary of parsed parameters
+    """
+    if not query_string or not query_string.strip():
+        return {}
+
+    params = {}
+    # Split by & and parse each parameter
+    for param_pair in query_string.split("&"):
+        if "=" in param_pair:
+            key, value = param_pair.split("=", 1)
+            key = key.strip()
+            value = value.strip()
+            params[key] = value
+
+    return params
 
 
 def apply_odata_query_params(
