@@ -13,8 +13,6 @@ permissions:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    env:
-      DJANGO_SETTINGS_MODULE: tests.settings
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
@@ -49,8 +47,6 @@ jobs:
           pip install -e .[dev]
 
       - name: Run tests
-        env:
-          DJANGO_SETTINGS_MODULE: tests.settings
         run: |
           pytest --cov=django_odata --cov-report=xml
 
