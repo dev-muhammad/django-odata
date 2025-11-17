@@ -11,10 +11,9 @@ This package combines drf-flex-fields and odata-query to provide:
 from importlib import import_module
 from typing import Any
 
-__version__ = "0.1.0"
-__author__ = "Your Name"
+__version__ = "0.1.1"
+__author__ = "Muhammad Abdugafarov"
 
-# Public API (resolved lazily to avoid importing Django/DRF at import time)
 __all__ = [
     "ODataModelSerializer",
     "ODataSerializer",

@@ -482,3 +482,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Comprehensive test suite
 - Example application
 - Support for Django 4.2 LTS and Python 3.8+
+
+### v0.1.1 (2025-11-17)
+- Lazy import implemented
