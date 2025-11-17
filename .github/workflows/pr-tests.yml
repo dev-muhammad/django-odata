@@ -1,0 +1,11 @@
+name: Pull Request CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  tests:
+    uses: ./.github/workflows/ci-tests.yml
+
+
